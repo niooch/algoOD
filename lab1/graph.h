@@ -1,6 +1,12 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+struct TopologicalResults {
+    bool isDAG = true;
+    vector<int> order;
+    vector<int> cycle;
+};
+
 struct Travelsal {
     vector<int> order; //kolejnosc przejscia przez wierzcholki
     vector<int> parent; //kto jest ojcem wierzcholka: u -> parent[u]
@@ -35,10 +41,12 @@ class Graph {
             return false;
         }
     public:
+        int N();
         Graph(ifstream& in);
         ~Graph();
         Travelsal dfs();
         Travelsal bfs();
         void printAdj();
+        TopologicalResults topologicalSort();
 };
 

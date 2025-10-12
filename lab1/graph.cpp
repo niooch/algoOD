@@ -1,6 +1,8 @@
 #include "graph.h"
-//funkcje pomocnicze do wczytywania danych
 
+int Graph::N(){
+    return n;
+}
 Graph::Graph(ifstream& in){
     string line;
     //wczytaj pokoleji dane
@@ -111,3 +113,51 @@ Travelsal Graph::dfs(){
     return T;
 }
 
+//Zadanie 2. sortowanie topologiczne grafu
+//Cormen 22.4
+TopologicalResults Graph::topologicalSort(){
+    TopologicalResults R;
+    //sprawdzenie czy graf jest skierowany
+    if(!directed){
+        R.isDAG=false;
+        return R;
+    }
+    vector<int> color(n,0); //jak w cormenie 0-bialy, 1-szary, 2-czarny
+    vector<int> parent(n,0);
+    vector<int> post;
+    post.reserve(n);
+    bool cycle;
+
+    function<bool(int)> dfsTS = [&](int u)->bool{
+        color[u] = 1;
+        for (int v: adj[u]){
+            if(color[v] == 0){
+                parent[v] = u;
+                if(dfsTS(v))
+                    return true;
+            }
+            else if (color[v] == 1){
+                cycle = true;
+                return true;
+            }
+        }
+        color[u] = 2;
+        post.push_back(u);
+        return false;
+    };
+
+    for(int i = 0; i<n; ++i)
+        if(color[i]==0)
+            if(dfsTS(i))
+                break;
+
+    if(cycle){
+        R.isDAG=false;
+        return R;
+    }
+    R.isDAG=true;
+    R.order.resize(n);
+    for(int i = 0; i <n; ++i)
+        R.order[i]=post[n-1-i] +1;
+    return R;
+}
