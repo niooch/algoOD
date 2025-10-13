@@ -1,10 +1,14 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+struct BipatiteResoult { //dwudzielnosc grafu
+    bool isBipartite = true;
+    vector<int> color;
+};
+
 struct TopologicalResults {
     bool isDAG = true;
     vector<int> order;
-    vector<int> cycle;
 };
 
 struct Travelsal {
@@ -13,6 +17,12 @@ struct Travelsal {
     vector<int> dist; //BFS
     vector<int> disc; //DFS pre
     vector<int> fin; //DFS post
+};
+
+struct SCCResults {
+    int count = 0; //ile SCC
+    vector<vector<int>> componets; //do wypisana wierzcholkow kazdej SCC
+    vector<int> sizes; //rozmiary kazdej SCC
 };
 
 class Graph {
@@ -48,5 +58,7 @@ class Graph {
         Travelsal bfs();
         void printAdj();
         TopologicalResults topologicalSort();
+        SCCResults stronglyConnectedComponents();
+        BipatiteResoult isBipatite();
 };
 

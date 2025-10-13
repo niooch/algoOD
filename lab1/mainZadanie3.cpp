@@ -17,24 +17,22 @@ int main(int argc, char* argv[]){
     //skonstroluj graf na podstawie danych z pliku
     Graph graph(file);
 
-    TopologicalResults R = graph.topologicalSort();
-    if(graph.N()>200){
-        if(R.isDAG)
-            cout<<"graf jest DAG";
-        else
-            cout<<"w grafie jest cykl";
-    }
-    else {
-        if(R.isDAG){
-            cout<<"Topologiczne posortowanie grafu:"<<endl;
-            for (int i = 0; i<R.order.size(); ++i){
-                cout<<R.order[i]<<" ";
-            }
+    SCCResults R = graph.stronglyConnectedComponents();
+    //wypisz dane o SCC
+    cout<<"liczba SCC: "<<R.count<<","<<endl<<"rozmiary: ";
+    for(int i= 0; i <R.count; ++i)
+        cout<<R.sizes[i]<<" ";
+    if(graph.N()<=200){
+        cout<<endl<<"wierzcholki w SCCs:"<<endl;
+        for(int i = 0; i<R.count; i++){
+            for(int j=0; j<R.componets[i].size(); j++)
+                cout<<R.componets[i][j]<<" ";
+            cout<<endl;
         }
-        else
-            cout<<"w grafie jest cykl";
     }
 
     return 0;
 }
+
+    
 

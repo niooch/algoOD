@@ -123,10 +123,10 @@ TopologicalResults Graph::topologicalSort(){
         return R;
     }
     vector<int> color(n,0); //jak w cormenie 0-bialy, 1-szary, 2-czarny
-    vector<int> parent(n,0);
+    vector<int> parent(n,-1);
     vector<int> post;
     post.reserve(n);
-    bool cycle;
+    bool cycle=false;
 
     function<bool(int)> dfsTS = [&](int u)->bool{
         color[u] = 1;
@@ -159,5 +159,93 @@ TopologicalResults Graph::topologicalSort(){
     R.order.resize(n);
     for(int i = 0; i <n; ++i)
         R.order[i]=post[n-1-i] +1;
+    return R;
+}
+
+//zadanie 3.
+//Cormen 22.5
+SCCResults Graph::stronglyConnectedComponents(){
+    SCCResults R;
+    
+    //pierwszy DFS
+    vector<char> vis(n, 0);
+    vector<int> order;
+    order.reserve(n);
+
+    function<void(int)> dfsSCC = [&](int u){
+        vis[u]=1;
+        for(int v: adj[u])
+            if(!vis[v]) dfsSCC(v);
+        order.push_back(u);
+    };
+
+    for(int i = 0; i<n; ++i)
+        if (!vis[i])
+            dfsSCC(i);
+
+    //odwrocenie krawedzi
+    vector<vector<int>> radj(n);
+    for(int u = 0; u<n; ++u)
+        for(int v: adj[u])
+            radj[v].push_back(u);
+
+    //DFS na odwroconym grafie
+    fill(vis.begin(), vis.end(), 0);
+
+    function<void(int, vector<int>&)> dfsSCC2 = [&](int u, vector<int>& bucket){
+        vis[u] = 1;
+        bucket.push_back(u);
+        for (int v: radj[u])
+            if(!vis[v])
+                dfsSCC2(v, bucket);
+    };
+
+    for(int i=n-1; i>=0; --i){
+        int u = order[i];
+        if(!vis[u]){
+            vector<int> bucket;
+            dfsSCC2(u, bucket);
+            for(int& x: bucket)
+                x++;
+
+            R.sizes.push_back((int)bucket.size());
+            R.componets.push_back(bucket);
+            R.count++;
+        }
+    }
+    return R;
+}
+
+//zadanie 4.
+//kolorwanie grafu przy uzyciu bfs. nalezy sprawdzic czy dowolne dwa polaczone ze soba wierzcholki maja ten sam kolor
+BipatiteResoult Graph::isBipatite(){
+    BipatiteResoult R;
+    R.color.assign(n, 0);
+    vector<int> depth(n,-1), parent(n, -1);
+    queue<int> q;
+
+    for(int s =0; s<n; ++s){
+        if(R.color[s] !=0) continue;
+        R.color[s] = 1;
+        depth[s] = 0;
+        parent[s] = -1;
+        q.push(s);
+
+        while(!q.empty()){
+            int u = q.front();
+            q.pop();
+            for(int v: adj[u]) {
+                if(R.color[v] == 0){
+                    R.color[v] = 3 - R.color[u]; //zaleznie od koloru u wybierz 1 lub 2;
+                    depth[v] = depth[u]+1;
+                    parent[v] = u;
+                    q.push(v);
+                } else if(R.color[v]== R.color[u]) {//graf nie jest dwudzielny
+                    R.isBipartite =false;
+                    return R;
+                }
+            }
+        }
+    }
     return R;
 }
