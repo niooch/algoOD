@@ -1,0 +1,91 @@
+#Jakub Kogut
+
+using JuMP
+using HiGHS
+using TOML #wczytywanie plikow z danymi
+import MathOptInterface as MOI
+
+function loadData(path::AbstractString)
+    data = TOML.parsefile(path)
+
+    s = Float64.(data["supply"]) #dostawy
+    d = Float64.(data["demand"]) #popyt
+    C = reduce(vcat, [Float64.(row)' for row in data["costs"]]) #koszty transportu
+    #podstawowe ograniczenia
+    m, n = size(C)
+    @assert length(s) == m "Liczba dostaw musi odpowiadać liczbie wierszy kosztów"
+    @assert length(d) == n "Liczba popytu musi odpowiadać liczbie kolumn kosztów"
+    @assert sum(s) >= sum(d) "Podaż musi być większa lub równa popytowi"
+
+    return s, d, C
+end
+
+function solveTransport(s::Vector{<:Real}, d::Vector{<:Real}, C::AbstractMatrix{<:Real})
+    tol = 1e-7
+    I = eachindex(s)
+    J = eachindex(d)
+    @assert size(C) == (length(s), length(d)) "Macierz kosztów musi mieć rozmiar zgodny z dostawami i popytem"
+    model = Model(HiGHS.Optimizer)
+    set_silent(model)
+    
+    #zmienne decyzyjne
+    @variable(model, x[i in I, j in J] >= 0) #ilości transportowane
+    
+    #ograniczenia
+    @constraint(model, [i in I], sum(x[i, j] for j in J) <= s[i]) #dostawy
+    @constraint(model, [j in J], sum(x[i, j] for i in I) == d[j]) #popyt
+
+    #funkcja celu
+    @objective(model, Min, sum(C[i, j] * x[i, j] for i in I, j in J))
+
+    optimize!(model)
+    status = termination_status(model)
+    @assert status in (MOI.OPTIMAL, MOI.LOCALLY_SOLVED) "Model nie został rozwiązany optymalnie, status: $status"
+    X = [value.(x[i, j]) for i in I, j in J]
+    obj = objective_value(model)
+
+    #raport
+    println("Status: ", status)
+    println("Minimalny koszt: ", round(obj, digits=6))
+    println()
+
+    println("Przepływy x[i,j] > $(tol):")
+    for i in I, j in J
+        if X[i, j] > tol
+            println("  i=", i, " -> j=", j, " : ", round(X[i, j], digits=6), "   (c=", C[i, j], ")")
+        end
+    end
+    println()
+
+    s_shipped = [sum(X[i, :]) for i in I]
+    d_recv    = [sum(X[:, j]) for j in J]
+
+    println("Podaże (wysłano / dostępne):")
+    for i in I
+        used = round(s_shipped[i], digits=6)
+        cap  = s[i]
+        println("  i=", i, ": ", used, " / ", cap)
+    end
+    println()
+
+    println("Popyty (otrzymano = wymagane):")
+    for j in J
+        rec = round(d_recv[j], digits=6)
+        dem = d[j]
+        println("  j=", j, ": ", rec, " = ", dem)
+    end
+
+    return X, obj
+end
+
+function main()
+    if length(ARGS) < 1
+        println("Użycie: julia transport.jl <plik.toml>")
+        return
+    end
+    s, d, C = loadData(ARGS[1])
+    solveTransport(s, d, C)
+end
+
+main()
+ 

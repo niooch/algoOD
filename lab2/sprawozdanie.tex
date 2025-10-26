@@ -1,0 +1,181 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[polish]{babel}
+\usepackage{lmodern}
+\usepackage[final]{microtype}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+
+% ======= Parametry do łatwej zmiany liczby węzłów =======
+\newcommand{\nI}{3} % liczba dostawców |I|
+\newcommand{\nJ}{4} % liczba odbiorców |J|
+
+% ======= Style rysunku =======
+\tikzset{
+  supplier/.style = {circle, draw, thick, minimum size=8mm, font=\small, fill=blue!5},
+  demand/.style   = {circle, draw, thick, minimum size=8mm, font=\small, fill=green!5},
+  cost/.style     = {font=\scriptsize, midway, sloped, fill=white, inner sep=1pt},
+  supply/.style   = {font=\scriptsize, right=2mm},
+  demandlab/.style= {font=\scriptsize, left=2mm},
+  every edge quotes/.style = {auto, text=black},
+  edge/.style     = {thin, -{Latex[length=2mm]}, draw=black!60}
+}
+
+
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{} % czyść wszystko
+\lhead{Lista 2.}
+\rhead{\leftmark}
+\cfoot{\thepage}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{siunitx} 
+\sisetup{locale = PL}
+\usepackage{bm}     
+
+\usepackage[hidelinks]{hyperref}
+\usepackage[nameinlink,capitalise,noabbrev]{cleveref}
+\usepackage{csquotes}
+
+\usepackage{enumitem}
+\setlist{noitemsep,topsep=3pt}
+\usepackage{xcolor}
+
+\numberwithin{equation}{section}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{2}
+
+\title{Sprawozdanie -- Laboratoria 2.}
+\author{Jakub Kogut}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Zadanie 1.}
+Zadanie 1. przedstawia problem transportowy, gdzie celem jest minimalizacja kosztów przewozu towarów producentów (supplyers) do odbiorców (demand). 
+
+\subsection{Opis modelu}
+Mamy dane:
+\begin{itemize}
+    \item Zbiór dostawców paliwa (firmy paliwowe -- supply) $S = \{1, 2, \ldots, m\}$, gdzie $m$ to liczba dostawców.
+    \item Zbiór odbiorców paliwa (lotniska -- demand) $D = \{1, 2, \ldots, n\}$, gdzie $n$ to liczba odbiorców.
+    \item $s_i\geq 0$ -- ilość paliwa dostępna u dostawcy $i \in S$.
+    \item $d_j \geq 0$ -- ilość paliwa wymagana przez odbiorcę $j \in D$.
+    \item $c_{ij} \geq 0$ -- koszt transportu jednostki paliwa od dostawcy $i \in S$ do odbiorcy $j \in D$.
+\end{itemize}
+\subsubsection{Definicje zmiennych decyzyjnych}
+Zmiennymi decyzyjnymi są:
+\begin{itemize}
+    \item $x_{ij}$ -- ilość paliwa transportowana od dostawcy $i \in S$ do odbiorcy $j \in D$.
+\end{itemize}
+
+Problem można zwizualizować grafem:
+\begin{center}\begin{tikzpicture}[x=1cm,y=1.2cm]
+
+% Kolumny
+\def\xL{0}      % x lewa kolumna (dostawcy)
+\def\xR{6}      % x prawa kolumna (odbiorcy)
+
+% ======= Węzły po lewej: dostawcy S_i z podażą s_i =======
+\foreach \i in {1,...,\nI} {
+  \node[supplier] (S\i) at (\xL, {-(\i-1)}) {$S_{\i}$};
+  \node[supply]   at ($(S\i.east)$) {$s_{\i}$};
+}
+
+% ======= Węzły po prawej: lotniska/odbiorcy D_j z popytem d_j =======
+\foreach \j in {1,...,\nJ} {
+  \node[demand] (D\j) at (\xR, {-(\j-1) + 0.5*(\nI-\nJ)}) {$D_{\j}$};
+  \node[demandlab] at ($(D\j.west)$) {$d_{\j}$};
+}
+
+% ======= Krawędzie kompletne z opisem kosztu c_{ij} =======
+\foreach \i in {1,...,\nI} {
+  \foreach \j in {1,...,\nJ} {
+    \draw[edge] (S\i) -- (D\j)
+      node[cost] {$c_{\i\j}$};
+  }
+}
+
+% ======= Opisy zbiorów =======
+\node[font=\small] at (\xL, {1}) {$\text{Dostawcy } I=\{1,\dots,\nI\}$};
+\node[font=\small] at (\xR, {1}) {$\text{Odbiorcy } J=\{1,\dots,\nJ\}$};
+\end{tikzpicture}\end{center}
+
+\subsubsection{Funkcja celu}
+Celem jest minimalizacja całkowitych kosztów transportu paliwa, co można zapisać jako:
+\[
+    \min \sum_{i \in S} \sum_{j \in D} c_{ij} x_{ij}
+\]
+\subsubsection{Ograniczenia}
+Ograniczenia, które musi spełniać model to:
+\begin{itemize}
+    \item podaż dla każdego dostawcy $i \in S$ nie może przekroczyć jego możliwości produkcyjnych:
+        \[
+            \sum_{j \in D} x_{ij} \leq s_i
+        \]
+    \item popyt dla każdego odbiorcy $j \in D$ musi być w pełni zaspokojony:
+        \[
+            \sum_{i \in S} x_{ij} = d_j
+        \]
+    \item zmienne decyzyjne nie mogą być ujemne:
+        \[
+            x_{ij} \geq 0, \quad \forall i \in S, j \in D
+        \]
+    \item aby egzemplarz problemu był możliwy do rozwiązania, całkowita podaż musi być mniejsza bądź równa całkowitemu popytowi:
+        \[
+            \sum_{i \in S} s_i \geq \sum_{j \in D} d_j
+        \]
+\end{itemize}
+
+\subsection{Opis rozwiązywanych egzemplarzy}
+Kod rozwiązujący egzemplarze znajduje się w pliku \texttt{kody/transport.jl}. W pliku należy podać dane: 
+\begin{itemize}
+    \item wektor podaży $s$,
+    \item wektor popytu $d$.
+    \item macierz kosztów transportu $C$,
+\end{itemize}
+Dla danych podanych w zadaniu mamy zadane 4 lotniska (odbiorców) i 3 firmy paliwowe (dostawców). Ilości paliwa są podane w galonach, a koszty transportu w dolarach za galon:
+\begin{itemize}
+    \item $s = [275000, 550000, 660000]$,
+    \item $d = [110000, 220000, 330000, 440000]$,
+    \item $
+        C = \begin{bmatrix}
+            10 &10&9&11 \\
+            7&11&12&13 \\
+            8&14&4&9\\
+        \end{bmatrix}
+        $
+\end{itemize}
+otrzymujemy następujące rozwiązanie:
+    \[
+        X = \begin{bmatrix}
+            0 & 165000 & 0 & 110000 \\
+            110000 & 55000 & 0 & 0 \\
+            0 & 0 & 330000 & 330000 \\
+        \end{bmatrix}
+    \]
+    gdzie $X=[x_{ij}]$ to macierz ilości paliwa transportowanego od dostawców do odbiorców. 
+
+\subsection{Wnioski}
+\begin{itemize}
+    \item Całkowity, minimalny koszt transportu wynosi \num{8525000}.
+    \item Tak, każda firma paliwowa wysyła paliwo do więcej niż jednego lotniska:
+        \[
+            \sum_{j} x_{1j} > 0, \quad \sum_{j} x_{2j} > 0, \quad \sum_{j} x_{3j} > 0
+        \]
+    \item Nie, nie każda firma paliwowa wysyła całkowicie swoją potencjalną produkcję paliwa:
+        \[
+            \sum_{j} x_{1j} = 275000 = s_1, \quad \textcolor{red}{\sum_{j} x_{2j} = 165000 < s_2}, \quad \sum_{j} x_{3j} = 660000 = s_3
+        \]
+\end{itemize}
+
+\section{Zadanie 2.}
+
+
+\end{document}
+

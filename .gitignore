@@ -1,1 +1,9 @@
 */dane/*
+*.aux
+*.fdb*
+*.fls
+*.log
+*.out
+*.gz
+*.toc
+
