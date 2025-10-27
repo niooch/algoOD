@@ -1,0 +1,91 @@
+#Jakub Kogut
+using JuMP
+using HiGHS
+using TOML
+import MathOptInterface as MOI
+
+function loadData(path::AbstractString)
+    data = TOML.parsefile(path)
+    #czas obrobki a_mp
+    A = reduce(vcat, [Float64.(row)' for row in data["a"]])
+    #dostepny czas pracy H_m (W MINUTACH)
+    H = Float64.(data["H"])
+    #maksymalny popyt u_p
+    u = Float64.(data["u"])
+    #zysk ze sprzedazy r_p
+    r = Float64.(data["r"])
+    #koszt materialow c_p
+    c = Float64.(data["c"])
+    #koszt eksploatacji maszyny d_m
+    d = Float64.(data["d"]) ./ 60.0  # konwersja na dolary na minute
+
+    #obliczenie marzy zysku na produkcie
+    m, n = size(A)
+    margin = [r[j] - c[j] - sum(d[i] * A[i,j] for i in 1:m) for j in 1:n]
+
+    return A, H, u, margin
+end
+
+function solveSchedule(A::AbstractMatrix{<:Real}, H::Vector{<:Real}, u::Vector{<:Real}, margin::Vector{<:Real})
+    tol = 1e-7
+    m, n = size(A)
+    model = Model(HiGHS.Optimizer)
+    set_silent(model)
+
+    #Decyzje: x_p (0 <= x_p <= u_p)
+    @variable(model, 0 <= x[i=1:n] <= u[i])
+
+    #Ograniczenia maszyn (sum(a_mp * x_p) <= H_m)
+    @constraint(model, [i in 1:m], sum(A[i,j] * x[j] for j=1:n) <= H[i])
+
+    #Funkcja celu: maksymalizacja zysku (max sum(margin_p * x_p))
+    @objective(model, Max, sum(margin[j] * x[j] for j in 1:n))
+
+    optimize!(model)
+    st = termination_status(model)
+    if !(st in (MOI.OPTIMAL, MOI.LOCALLY_SOLVED))
+        println("Uwaga: status optymalizacji: $st")
+    end
+
+    xval = value.(x)
+    obj = objective_value(model)
+
+    println("=== Production LP (HiGHS) ===")
+    println("Status: ", st)
+    println("Maksymalny zysk: ", round(obj, digits=6))
+    println()
+
+    println("Marża jednostkowa [dolars per unit] (p=1..n):")
+    for (j, mrg) in enumerate(margin)
+        println("  p=", j, " : ", round(mrg, digits=6))
+    end
+    println()
+
+    println("Optymalne ilości x_p (> $(tol)):")
+    for j in 1:n
+        if xval[j] > tol
+            println("  p=", j, " : ", round(xval[j], digits=6))
+        end
+    end
+    println()
+
+    used = [sum(A[i, j] * xval[j] for j in 1:n) for i in 1:m]
+    println("Czasy maszyn [min] (użycie / dostępność):")
+    for i in 1:m
+        bind = abs(used[i] - H[i]) <= tol ? " [wiążące]" : ""
+        println("  m=", i, " : ", round(used[i], digits=6), " / ", H[i], bind)
+    end
+
+    return xval, obj
+end
+
+function main()
+    if length(ARGS) < 1
+        println("Użycie: julia transport.jl <plik.toml>")
+        return
+    end
+    A, H, u, margin = loadData(ARGS[1])
+    solveSchedule(A, H, u, margin)
+end
+
+main()

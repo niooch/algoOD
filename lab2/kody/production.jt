@@ -1,0 +1,81 @@
+#Jakub Kogut
+using JuMP
+using HiGHS
+using TOML
+import MathOptInterface as MOI
+
+function load_data(path::AbstractString)
+    t = TOML.parsefile(path)
+    c      = Float64.(t["c"])          
+    o      = Float64.(t["o"])          
+    a      = Float64.(t["a"])          
+    d      = Float64.(t["d"])          
+    P_max  = Float64(t["P_max"])       
+    S_max  = Float64(t["S_max"])       
+    h      = Float64(t["h"])           
+    S0     = Float64(t["S0"])          
+    return c, o, a, d, P_max, S_max, h, S0
+end
+
+function solve_plan(c, o, a, d, P_max, S_max, h, S0; tol=1e-7)
+    K = length(d)
+    model = Model(HiGHS.Optimizer)
+    set_silent(model)
+
+    @variable(model, 0 <= x[1:K] <= P_max)  # produkcja normalna
+    @variable(model, 0 <= y[1:K])           # produkcja ponadwymiarowa
+    @variable(model, 0 <= S[1:K] <= S_max)  # zapas na koniec okresu
+
+    # limity na y_j: 0 <= y_j <= a_j
+    @constraint(model, [j in 1:K], y[j] <= a[j])
+
+    # bilans zapasów
+    for j in 1:K
+        if j == 1
+            @constraint(model, S0 + x[1] + y[1] - S[1] == d[1])
+        else
+            @constraint(model, S[j-1] + x[j] + y[j] - S[j] == d[j])
+        end
+    end
+
+    # cel: minimalizacja łącznych kosztów
+    @objective(model, Min, sum(c[j]*x[j] + o[j]*y[j] + h*S[j] for j in 1:K))
+
+    optimize!(model)
+    st = termination_status(model)
+    if !(st in (MOI.OPTIMAL, MOI.LOCALLY_SOLVED))
+        println("Uwaga: status: ", st)
+    end
+
+    xval = value.(x); yval = value.(y); Sval = value.(S)
+    obj  = objective_value(model)
+
+    # ---- Raport (zwięzły) ----
+    println("Status: ", st)
+    println("Koszt minimalny: ", round(obj, digits=4))
+    println()
+    println(rpad("Okres",6), rpad("x_j",12), rpad("y_j",12), rpad("S_j",12), "Bilans (= d_j)")
+    for j in 1:K
+        lhs = (j == 1 ? S0 : Sval[j-1]) + xval[j] + yval[j] - Sval[j]
+        println(rpad(string(j),6),
+                rpad(string(round(xval[j], digits=4)),12),
+                rpad(string(round(yval[j], digits=4)),12),
+                rpad(string(round(Sval[j], digits=4)),12),
+                round(lhs, digits=4), " = ", d[j])
+    end
+    println()
+    println("Ograniczenia: 0 ≤ x_j ≤ P_max=", P_max, " ; 0 ≤ y_j ≤ a_j ; 0 ≤ S_j ≤ S_max=", S_max)
+    return xval, yval, Sval, obj
+end
+
+function main()
+    if length(ARGS) < 1
+        println("Użycie: julia production.jl <data.toml>")
+        return
+    end
+    c, o, a, d, P_max, S_max, h, S0 = load_data(ARGS[1])
+    solve_plan(c, o, a, d, P_max, S_max, h, S0)
+end
+
+main()
+

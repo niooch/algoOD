@@ -6,11 +6,13 @@
 \usepackage{lmodern}
 \usepackage[final]{microtype}
 \usepackage{tikz}
+\usepackage{enumitem}
 \usetikzlibrary{arrows.meta,positioning,calc}
 
 % ======= Parametry do łatwej zmiany liczby węzłów =======
 \newcommand{\nI}{3} % liczba dostawców |I|
 \newcommand{\nJ}{4} % liczba odbiorców |J|
+\setlength{\headheight}{14.5pt} % poprawka do fancyhdr
 
 % ======= Style rysunku =======
 \tikzset{
@@ -162,7 +164,7 @@ otrzymujemy następujące rozwiązanie:
     gdzie $X=[x_{ij}]$ to macierz ilości paliwa transportowanego od dostawców do odbiorców. 
 
 \subsection{Wnioski}
-\begin{itemize}
+\begin{enumerate}[label=(\alph*)]
     \item Całkowity, minimalny koszt transportu wynosi \num{8525000}.
     \item Tak, każda firma paliwowa wysyła paliwo do więcej niż jednego lotniska:
         \[
@@ -172,9 +174,272 @@ otrzymujemy następujące rozwiązanie:
         \[
             \sum_{j} x_{1j} = 275000 = s_1, \quad \textcolor{red}{\sum_{j} x_{2j} = 165000 < s_2}, \quad \sum_{j} x_{3j} = 660000 = s_3
         \]
-\end{itemize}
+\end{enumerate}
 
 \section{Zadanie 2.}
+Zadanie przedstawia problem zarządzania linią produkcyjną, w której dostępne są różne maszyny do obróbki surowców w celu produkcji określonych wyrobów gotowych. Celem jest maksymalizacja zysku z produkcji przy jednoczesnym spełnieniu ograniczeń dotyczących zasobów i zdolności produkcyjnych maszyn.
+\subsection{Opis modelu}
+Mamy dane:
+\begin{itemize}
+    \item Zbiór maszyn $M = \{1, 2, \ldots, m\}$, gdzie $m$ to liczba maszyn.
+    \item Zbiór wyrobów gotowych $P = \{1, 2, \ldots, n\}$, gdzie $n$ to liczba wyrobów.
+    \item $a_{mp} \geq 0$ -- czas obróbki jednoski materiału $m \in M$ w jednostce czasu na maszynie $p \in P$.
+    \item $H_m$ -- dostępny czas pracy maszyny $m \in M$.
+    \item $u_p \geq 0$ -- maksymalny popyt na wyrób $p \in P$.
+    \item $r_p \geq 0$ -- zysk ze sprzedaży jednostki wyrobu $p \in P$.
+    \item $c_p \geq 0$ -- koszt mareiałów potrzebnych do produkcji jednostki wyrobu $p \in P$.
+    \item $d_m \geq 0$ -- koszt eksploatacji maszyny $m \in M$ na jednostkę czasu pracy.
+\end{itemize}
+
+\subsubsection{Definicje zmiennych decyzyjnych}
+Zmiennymi decyzyjnymi są:
+\begin{itemize}
+    \item $x_p$ -- ilość wyprodukowanych jednostek wyrobu $p \in P$.
+\end{itemize}
+%graf
+%TODO: zastanowic sie na tym rysunkiem, czy jest wogole potrzebny
+\newcommand{\nM}{3} % liczba maszyn
+\newcommand{\nP}{4} % liczba wyrobów
+
+% ===== Style =====
+\tikzset{
+  machine/.style  = {rectangle, draw, thick, rounded corners=2pt, minimum width=15mm, minimum height=8mm, font=\small, fill=blue!6},
+  product/.style  = {rectangle, draw, thick, rounded corners=2pt, minimum width=15mm, minimum height=8mm, font=\small, fill=green!6},
+  edge/.style     = {thin, -{Latex[length=2mm]}, draw=black!60},
+  etime/.style    = {font=\scriptsize, midway, sloped, fill=white, inner sep=1pt},
+  mcap/.style     = {font=\scriptsize, right=2mm},
+  dem/.style      = {font=\scriptsize, left=2mm},
+  price/.style    = {font=\scriptsize, below=1.2mm},
+  docbox/.style   = {draw, rounded corners, align=left, font=\scriptsize, fill=yellow!12}
+}
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=1.2cm]
+
+% Kolumny
+\def\xL{0}   % maszyny
+\def\xR{7}   % wyroby
+
+% ===== Maszyny: M_m z dostępnością H_m =====
+\foreach \m in {1,...,\nM} {
+  \node[machine] (M\m) at (\xL, {-(\m-1)}) {$M_{\m}$};
+  \node[mcap]    at ($(M\m.east)$) {$H_{\m}$};
+}
+
+% ===== Wyroby: P_p z ograniczeniem popytu u_p, ceną r_p i kosztem materiału c^mat_p =====
+\foreach \p in {1,...,\nP} {
+  \node[product] (P\p) at (\xR, {-(\p-1) + 0.5*(\nM-\nP)}) {$P_{\p}$};
+  \node[dem]     at ($(P\p.west)$) {$u_{\p}$};
+  \node[price]   at ($(P\p.south)$) {$r_{\p},\; c^{\text{mat}}_{\p}$};
+}
+
+% ===== Krawędzie z czasami obróbki a_{mp} (min/kg) =====
+\foreach \m in {1,...,\nM} {
+  \foreach \p in {1,...,\nP} {
+    \draw[edge] (M\m) -- (P\p)
+      node[etime] {$a_{\m\p}$};
+  }
+}
+
+% ===== Podpisy grup =====
+\node[font=\small] at (\xL, {1})  {$\text{Maszyny } M=\{1,\dots,\nM\}$};
+\node[font=\small] at (\xR, {1})  {$\text{Wyroby } P=\{1,\dots,\nP\}$};
+
+\end{tikzpicture}
+\end{center}
+\subsubsection{Funkcja celu}
+Celem jest maksymalizacja zysku z produkcji wyrobów, co można zapisać jako:
+\[
+    \max \underbrace{\sum_{p \in P} r_p x_p}_{\text{przychód}} - \underbrace{\sum_{p \in P} c_p x_p}_{\text{koszt materiałów}} - \underbrace{\sum_{m \in M} d_m \left( \sum_{p \in P} a_{mp} x_p \right)}_{\text{koszt eksploatacji maszyn}}
+\]
+Co można uprościć do:
+\[
+    \max \sum_{p \in P} \left( r_p - c_p - \sum_{m \in M} d_m a_{mp} \right) x_p
+\]
+\subsubsection{Ograniczenia}
+Ograniczenia, które musi spełniać model to:
+\begin{itemize}
+    \item Dostępność czasu pracy każdej maszyny $m \in M$ nie może zostać przekroczona:
+        \[
+            \sum_{p \in P} a_{mp} x_p \leq H_m
+        \]
+    \item Produkcja każdego wyrobu $p \in P$ nie może przekroczyć maksymalnego popytu oraz musi być nieujemna:
+        \[
+            0 \leq x_p \leq u_p
+        \]
+\end{itemize}
+
+\subsection{Opis rozwiązywanych egzemplarzy}
+Kod rozwiązujący egzemplarze znajduje się w pliku \texttt{kody/schedule.jt}. W pliku należy podać dane:
+\begin{itemize}
+    \item macierz czasów obróbki $A$ [min/kg],
+    \item wektor dostępnych czasów pracy maszyn $H$ [min],
+    \item wektor maksymalnego popytu $u$ [kg],
+    \item wektor zysków ze sprzedaży $r$ [\$/kg],
+    \item wektor kosztów materiałów $c$ [\$/kg],
+    \item wektor kosztów eksploatacji maszyn $d$ [\$/min].
+\end{itemize}
+W przykładzie z zadania mamy $P=\{1,2,3,4}$ wyrobów oraz $M=\{1,2,3\}$ maszyn. Dane wejściowe to:
+\begin{itemize}
+    \item $A = \begin{bmatrix}
+            5 &3 &4 &4 \\
+            10&6&5&2\\
+            6&4&3&1\\
+        \end{bmatrix}$, gdzie $A=[a_{mp}]$, dla $m \in M$, $p \in P$,
+    \item $H = [3600,3600,3600]$
+    \item $u = [400, 100, 150,500]$,
+    \item $r = [9,7,6,5]$,
+    \item $c = [4,1,1,1]$,
+    \item $d = [2,2,3]$.
+\end{itemize}
+Otrzymujemy następujące rozwiązanie:
+\[
+    X = [125,100,150,500] \quad X=[x_p]$ \text{to wektor ilości wyprodukowanych jednostek wyrobów} p \in P
+\]
+Maksymalny zysk wynosi \num{3632.5} dolarów.
+Czas pracy maszyn wynosi odpowiednio:
+\begin{itemize}
+    \item Maszyna 1: $3525$ min,
+    \item Maszyna 2: $3600$ min,
+    \item Maszyna 3: $2100$ min.
+\end{itemize}
+
+\section{Zadanie 3.}
+W tym zadaniu należy znaleść optymalny plan produkcji oraz magazynowania towaru przez pewną firmę, która w danym okresie czasu może zwiększać jego produkcję lub magazynować nadwyżki w celu zaspokojenia przyszłego popytu.
+\subsection{Opis modelu}
+Mamy dane:
+\begin{itemize}
+    \item Okresy czasu $T = \{1,\dots, K\}$, gdzie $K$ to liczba okresów.
+    \item Maksymalna okresowa produkcja $P_{max}$ -- maksymalna ilość towaru, którą firma może wyprodukować w jednym okresie czasu.
+    \item $c_j$ -- koszt produkcji jednostki towaru w nie ponadmiarowej produkcji w okresie $j \in T$.
+    \item $a_j$ -- ilość możliwej dodatkowej produkcji w okresie $j \in T$.
+    \item $o_j$ -- koszt produkcji jednostki towaru w ponadmiarowej produkcji w okresie $j \in T$.
+    \item $d_j$ -- popyt na towar w okresie $j \in T$.
+    \item $h$ -- koszt magazynowania jednostki towaru przez jeden okres czasu.
+    \item $S_{max}$ -- maksymalna pojemność magazynu.
+    \item $s_0$ -- początkowa ilość towaru w magazynie.
+\end{itemize}
+
+\subsubsection{Definicje zmiennych decyzyjnych}
+Zmiennymi decyzyjnymi są:
+\begin{itemize}
+    \item $x_j$ -- ilość towaru wyprodukowana w okresie $j \in T$ w nie ponadmiarowej produkcji,
+    \item $y_j$ -- ilość towaru wyprodukowana w okresie $j \in T$ w ponadmiarowej produkcji,
+    \item $s_j$ -- ilość towaru magazynowana na koniec okresu $j \in T$.
+\end{itemize}
+\subsubsection{Funkcja celu}
+Celem jest minimalizacja całkowitych kosztów produkcji i magazynowania towaru, co można zapisać jako:
+\[
+    \min \sum_{j \in T} \left( c_j x_j + o_j y_j + h s_j \right)
+\]
+\subsubsection{Ograniczenia}
+Ograniczenia, które musi spełniać model to:
+\begin{itemize}
+    \item Bilans zapasu w każdym okresie $j \in T$:
+        \[
+            s_{j-1} + x_j + y_j = d_j + s_j
+        \]
+    \item Produkcja w nie ponadmiarowej produkcji nie może przekroczyć maksymalnej produkcji:
+        \[
+            0 \leq x_j \leq P_{max}
+        \]
+    \item Produkcja w ponadmiarowej produkcji nie może przekroczyć dostępnej dodatkowej produkcji:
+        \[
+            0 \leq y_j \leq a_j
+        \]
+    \item Ilość towaru w magazynie nie może przekroczyć jego pojemności:
+        \[
+            0 \leq s_j \leq S_{max}
+        \]
+\end{itemize}
+\subsection{Opis rozwiązywanych egzemplarzy}
+Kod rozwiązujący egzemplarze znajduje się w pliku \texttt{kody/production.jl}. W pliku należy podać dane:
+\begin{itemize}
+    \item $c$ -- wektor kosztów produkcji w nie ponadmiarowej produkcji,
+    \item $o$ -- wektor kosztów produkcji w ponadmiarowej produkcji,
+    \item $a$ -- wektor dostępnej dodatkowej produkcji,
+    \item $d$ -- wektor popytu,
+    \item $P_{max}$ -- maksymalna produkcja w okresie,
+    \item $S_{max}$ -- maksymalna pojemność magazynu,
+    \item $h$ -- koszt magazynowania jednostki towaru przez
+    \item $s_0$ -- początkowa ilość towaru w magazynie,
+\end{itemize}
+Dla danych podanych w zadaniu mamy:
+\begin{itemize}
+    \item $c = [6000, 4000, 8000, 9000]$,
+    \item $o = [8000, 6000, 10000, 11000]$,
+    \item $a = [60, 65, 70, 60]$,
+    \item $d = [130, 80, 125, 195]$,
+    \item $P_{max} = 100$,
+    \item $S_{max} = 70$,
+    \item $h = 1500$,
+    \item $s_0 = 15$,
+\end{itemize}
+otrzymujemy następujące rozwiązanie:
+\begin{itemize}
+    \item Okres 1: $x_1 = 100$, $y_1 = 15$, $s_1 = 0$,
+    \item Okres 2: $x_2 = 100$, $y_2 = 50$, $s_2 = 70$,
+    \item Okres 3: $x_3 = 100$, $y_3 = 0$, $s_3 = 45$,
+    \item Okres 4: $x_4 = 100$, $y_4 = 50$, $s_4 = 0$,
+\end{itemize}
+\subsection{Wnioski}
+\begin{enumerate}[label=(\alph*)]
+    \item Całkowity minimalny koszt produkcji i magazynowania to \num{3842500}\$.
+    \item W okresach 1, 2 i 4 firma korzysta z ponadmiarowej produkcji:
+        \[
+            y_1 = 15 > 0, \quad y_2 = 50 > 0, \quad y_4 = 50 > 0
+        \]
+    \item W okresach 1 oraz 4 magazyn jest pusty na koniec okresu:
+        \[
+            s_1 = 0, \quad s_4 = 0
+        \]
+\end{enumerate}
+
+\section{Zadanie 4.}
+W zadaniu dany jest Graf $G=(N,A)$, gdzie $N$ to zbiór wierzchołków -- miast, a $A$ to zbiór łuków -- dróg łączących miasta. Celem jest znalezienie najtańszej trasy z miasta początkowego $j^{\circ} \in N$ do miasta docelowego $j^{\circ} \in N$, która nie przekracza określonego czasu podróży $T$.
+\subsection{Opis modelu}
+Mamy dane:
+\begin{itemize}
+    \item Zbiór miast $N = \{1, 2, \ldots, n\}$, gdzie $n$ to liczba miast.
+    \item Zbiór dróg $A \subseteq N \times N$, gdzie każda droga $(i,j) \in A$ łączy miasto $i \in N$ z miastem $j \in N$.
+    \item $c_{ij} \geq 0$ -- koszt przejazdu drogą $(i,j) \in A$.
+    \item $t_{ij} \geq 0$ -- czas przejazdu drogą $(i,j) \in A$.
+    \item $i^{\circ} \in N$ -- miasto początkowe.
+    \item $j^{\circ} \in N$ -- miasto docelowe.
+    \item $T \geq 0$ -- maksymalny dozwolony czas podróży.
+\end{itemize}
+
+\subsubsection{Definicje zmiennych decyzyjnych}
+Zmiennymi decyzyjnymi są:
+\begin{itemize}
+    \item $x_{ij} \in \{0,1\}$ -- zmienna binarna wskazująca, czy droga $(i,j) \in A$ jest wybrana w trasie.
+\end{itemize}
+\subsubsection{Funkcja celu}
+Celem jest minimalizacja całkowitego kosztu przejazdu z miasta początkowego do miasta docelowego, co można zapisać jako:
+\[
+    \min \sum_{(i,j) \in A} c_{ij} x_{ij}
+\]
+\subsubsection{Ograniczenia}
+Ograniczenia, które musi spełniać model to:
+\begin{itemize}
+    \item Zachowanie przepływu w każdym mieście $k \in N$:
+        \[
+            \sum_{j: (k,j) \in A} x_{kj} - \sum_{i: (i,k) \in A} x_{ik} =
+            \begin{cases}
+                1, & \text{jeśli } k = i^{\circ} \\
+                -1, & \text{jeśli } k = j^{\circ} \\
+                0, & \text{w przeciwnym razie}
+            \end{cases}
+        \]
+    \item Całkowity czas podróży nie może przekroczyć dozwolonego czasu $T$:
+        \[
+            \sum_{(i,j) \in A} t_{ij} x_{ij} \leq T
+        \]
+    \item Zmienne decyzyjne są binarne:
+        \[
+            x_{ij} \in \{0,1\}, \quad \forall (i,j) \in A
+        \]
+\end{itemize}
+
 
 
 \end{document}
