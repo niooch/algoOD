@@ -1,12 +1,10 @@
-# Jakub Kogut – RCSP / shortest path with resource (time) constraint
+# Jakub Kogut
 using JuMP
 using HiGHS
 using TOML
 import MathOptInterface as MOI
 
-# ---------------- I/O ----------------
-
-function load_rcsp(path::AbstractString)
+function loadData(path::AbstractString)
     d = TOML.parsefile(path)
     N     = Int(d["N"])
     s     = Int(d["s"])
@@ -14,7 +12,7 @@ function load_rcsp(path::AbstractString)
     Tmax  = Float64(d["Tmax"])
     arcs_raw = d["arcs"]
 
-    # listy łuków i atrybutów
+    #listy łuków i atrybutów
     I = Int[]; J = Int[]; C = Float64[]; T = Float64[]
     for a in arcs_raw
         push!(I, Int(a["i"]))
@@ -25,15 +23,14 @@ function load_rcsp(path::AbstractString)
     return N, s, tnode, Tmax, I, J, C, T
 end
 
-# ------------- Solver (MIP) -------------
 
 function solve_rcsp(N::Int, s::Int, tnode::Int, Tmax::Float64,
                     I::Vector{Int}, J::Vector{Int}, C::Vector{Float64}, T::Vector{Float64};
                     tol::Float64 = 1e-7)
 
-    A = collect(1:length(I))  # indeksy łuków 1..m
+    A = collect(1:length(I))  #ndeksy łuków 1..m
 
-    # listy łuków wychodzących i wchodzących do każdego wierzchołka
+    #lista sąsiedztwa
     out_arcs = [Int[] for _ in 1:N]
     in_arcs  = [Int[] for _ in 1:N]
     for a in A
@@ -46,16 +43,16 @@ function solve_rcsp(N::Int, s::Int, tnode::Int, Tmax::Float64,
 
     @variable(model, x[A], Bin)
 
-    # bilans przepływu (źródło +1, ujście -1, reszta 0)
+    #bilans przepływu (źródło +1, ujście -1, reszta 0)
     @constraint(model, [v in 1:N],
         sum(x[a] for a in out_arcs[v]) - sum(x[a] for a in in_arcs[v]) ==
             (v == s ? 1 : v == tnode ? -1 : 0)
     )
 
-    # ograniczenie zasobu (czas)
+    #ograniczenie zasobu (czas)
     @constraint(model, sum(T[a] * x[a] for a in A) <= Tmax)
 
-    # cel: minimalizacja kosztu
+    #cel: minimalizacja kosztu
     @objective(model, Min, sum(C[a] * x[a] for a in A))
 
     optimize!(model)
@@ -67,13 +64,10 @@ function solve_rcsp(N::Int, s::Int, tnode::Int, Tmax::Float64,
         println("Uwaga: termination_status = ", st, ", primal_status = ", primal)
     end
 
-    # wartości zmiennych binarnych
-    xval = value.(x)  # DenseAxisArray
+    xval = value.(x) 
 
-    # NIE używamy findall na DenseAxisArray (bywa problematyczne) – wybieramy ręcznie
     used = [a for a in A if xval[a] > 0.5]
 
-    # jeśli pusto -> brak ścieżki spełniającej ograniczenie
     if isempty(used)
         println("Brak ścieżki spełniającej ograniczenie czasowe (Tmax = $Tmax).")
         return Int[], Inf, Inf
@@ -82,10 +76,8 @@ function solve_rcsp(N::Int, s::Int, tnode::Int, Tmax::Float64,
     cost = sum(C[a] for a in used)
     time = sum(T[a] for a in used)
 
-    # rekonstrukcja ścieżki s -> t z wybranych łuków
     succ = Dict{Int,Int}()
     for a in used
-        # jeżeli byłby więcej niż jeden łuk wychodzący z wierzchołka wybranego – ostatni nadpisze
         succ[I[a]] = J[a]
     end
 
@@ -94,12 +86,10 @@ function solve_rcsp(N::Int, s::Int, tnode::Int, Tmax::Float64,
     push!(path, cur)
     seen = Set{Int}([cur])
 
-    # zabezpieczenie przed cyklami/pułapkami
     while haskey(succ, cur) && cur != tnode && length(path) <= length(A) + N
         cur = succ[cur]
         push!(path, cur)
         if cur in seen
-            # wykryto cykl – przerwij
             println("Uwaga: wykryto cykl podczas rekonstrukcji ścieżki. Przerywam.")
             break
         end
@@ -131,7 +121,7 @@ function main()
         println("Użycie: julia circulation.jl <plik.toml>")
         return
     end
-    N, s, tnode, Tmax, I, J, C, T = load_rcsp(ARGS[1])
+    N, s, tnode, Tmax, I, J, C, T = loadData(ARGS[1])
     solve_rcsp(N, s, tnode, Tmax, I, J, C, T)
 end
 

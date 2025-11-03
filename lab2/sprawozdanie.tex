@@ -439,6 +439,43 @@ Ograniczenia, które musi spełniać model to:
             x_{ij} \in \{0,1\}, \quad \forall (i,j) \in A
         \]
 \end{itemize}
+\subsection{Opis rozwiązywanych egzemplarzy}
+Kod rozwiązujący egzemplarze znajduje się w pliku \texttt{kody/circulation.jt}. W pliku należy podać dane:
+\begin{itemize}
+    \item $N$ -- moc zbioru miast,
+    \item $s$ -- wierzchołek początkowy,
+    \item $t$ -- wierzchołek docelowy,
+    \item $T_{max}$ -- maksymalny dozwolony czas podróży,
+    \item $arcs$ -- lista krotek reprezentujących drogi w formacie (miastoPoczątkowe, miastoDocelowe, koszt, czas),
+\end{itemize}
+Dla danych podanych w zadaniu mamy:
+\begin{itemize}
+    \item $N = 10$,
+    \item $s = 1$,
+    \item $t = 10$,
+    \item $T_{max} = 15$,
+    \item $arcs$ -- jak podane w poleceniu zadania
+\end{itemize}
+
+otrzymujemy następujące rozwiązanie:
+\begin{itemize}
+%Koszt minimalny: 13.0
+%Czas ścieżki:     15.0  (Tmax = 15.0)
+%Ścieżka: 1 -> 2 -> 3 -> 5 -> 7 -> 9 -> 10
+
+%Łuki w ścieżce (i,j) [c|t]:
+%  (1, 2) [3.0 | 4.0]
+%  (2, 3) [2.0 | 3.0]
+%  (3, 5) [2.0 | 2.0]
+%  (5, 7) [3.0 | 3.0]
+%  (7, 9) [1.0 | 1.0]
+%  (9, 10) [2.0 | 2.0]
+    \item Koszt minimalny: \num{13.0},
+    \item Czas ścieżki: \num{15.0} (Tmax = \num{15.0}),
+    \item Ścieżka: $1 \to 2 \to 3 \to 5 \to 7 \to 9 \to 10$,
+\end{itemize}
+\subsection{Wnioski}
+
 
 
 

@@ -1,0 +1,22 @@
+# a_mp — czasy obróbki [min/jednostkę], macierz m×n (m=|M|, n=|P|)
+a = [
+  [5, 3, 4, 4],  # m=1
+  [10, 6, 5, 2],  # m=2
+  [6, 4, 3, 1]   # m=3
+]
+
+# H_m — dostępny czas pracy [min/tydzień]
+H = [3600, 3600, 3600]
+
+# u_p — maksymalny popyt [jednostki]
+u = [400.0, 100.0, 150.0, 500.0]
+
+# r_p — zysk ze sprzedaży 1 jednostki [$/unit]
+r = [9.0, 7.0, 6.0, 5.0]
+
+# c_p — koszt materiałów 1 jednostki [$/unit]
+c = [4.0, 1.0, 1.0, 1.0]
+
+# d_m — koszt eksploatacji maszyny na jednostkę czasu [$/h]
+d = [2.0, 2.0, 3.0]
+

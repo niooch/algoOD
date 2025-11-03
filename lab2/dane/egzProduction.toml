@@ -1,0 +1,9 @@
+c     = [6000, 4000, 8000, 9000]   # koszt normalnej [$/szt]
+o     = [8000, 6000, 10000, 11000]   # koszt nadgodzin [$/szt]
+a     = [60, 65, 70, 60]     # maks. nadgodzin (szt/okres)
+d     = [130, 80, 125, 195]     # popyt (szt)
+P_max = 100                         # maks. normalnej (szt/okres)
+S_max = 70                          # pojemność magazynu (szt)
+h     = 1500                        # koszt magazynu [$/szt/okres]
+S0    = 15                          # stan początkowy (szt)
+

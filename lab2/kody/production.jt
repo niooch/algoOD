@@ -22,14 +22,14 @@ function solve_plan(c, o, a, d, P_max, S_max, h, S0; tol=1e-7)
     model = Model(HiGHS.Optimizer)
     set_silent(model)
 
-    @variable(model, 0 <= x[1:K] <= P_max)  # produkcja normalna
-    @variable(model, 0 <= y[1:K])           # produkcja ponadwymiarowa
-    @variable(model, 0 <= S[1:K] <= S_max)  # zapas na koniec okresu
+    @variable(model, 0 <= x[1:K] <= P_max) #produkcja normalna
+    @variable(model, 0 <= y[1:K]) #produkcja ponadwymiarowa
+    @variable(model, 0 <= S[1:K] <= S_max) #zapas na koniec okresu
 
-    # limity na y_j: 0 <= y_j <= a_j
+    #limity na y_j: 0 <= y_j <= a_j
     @constraint(model, [j in 1:K], y[j] <= a[j])
 
-    # bilans zapasów
+    #bilans zapasów
     for j in 1:K
         if j == 1
             @constraint(model, S0 + x[1] + y[1] - S[1] == d[1])
@@ -38,7 +38,7 @@ function solve_plan(c, o, a, d, P_max, S_max, h, S0; tol=1e-7)
         end
     end
 
-    # cel: minimalizacja łącznych kosztów
+    #cel: minimalizacja łącznych kosztów
     @objective(model, Min, sum(c[j]*x[j] + o[j]*y[j] + h*S[j] for j in 1:K))
 
     optimize!(model)
@@ -50,7 +50,6 @@ function solve_plan(c, o, a, d, P_max, S_max, h, S0; tol=1e-7)
     xval = value.(x); yval = value.(y); Sval = value.(S)
     obj  = objective_value(model)
 
-    # ---- Raport (zwięzły) ----
     println("Status: ", st)
     println("Koszt minimalny: ", round(obj, digits=4))
     println()
