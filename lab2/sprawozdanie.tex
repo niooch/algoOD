@@ -475,7 +475,42 @@ otrzymujemy następujące rozwiązanie:
     \item Ścieżka: $1 \to 2 \to 3 \to 5 \to 7 \to 9 \to 10$,
 \end{itemize}
 \subsection{Wnioski}
+\begin{enumerate}[label=(\alph*)]
+    \item Wyniki dla podanego egzemplarza znajdują się powyżej.
+    \item Własny egzemplarz wygląda następująco:
+        %zalacz wlasnyGraf/wlasny.png
+        \begin{figure}[!ht]
+            \centering
+            \includegraphics[width=1.0\textwidth]{wlasnyGraf/wlasny.png}
+            \caption{Własny egzemplarz zadania 4.}
+            \label{fig:wlasny}
+        \end{figure}
+        Dla tego egzemplarza mamy:
+        \begin{itemize}
+            \item Najkrótsza scieżka (bez ograniczenia czasowego): $1 \to 3 \to 6$, o koszcie \num{10.0} i czasie \num{20.0},
+            \item Najtańsza ścieżka z ograniczeniem czasowym $T_{max} = 15$: $1 \to 2 \to 3 \to 5 \to 7 \to 9 \to 10$, o koszcie \num{13.0} i czasie \num{15.0}.
+        \end{itemize}
+    \item Tak, \textbf{ograniczenie na całkowitoliczbowość jest istotne}. Rozważmy przykład \hyperref[fig:kontrprzyklad]{grafu}, gdzie mamy następujące dane:\\
+        %zalacz wlasnyGraf/wlasnyKontrprzyklad.png
+        \begin{figure}[!ht]
+            \centering
+            \includegraphics[width=0.5\textwidth]{wlasnyGraf/wlasnyKontprzyklad.png}
+            \caption{Przykład grafu, gdzie ograniczenie całkowitoliczbowości jest istotne.}
+            \label{fig:kontrprzyklad}
+        \end{figure}
+        W tym przypadku istnieją dwie ścieżki z wierzchołka $1$ do wierzchołka $4$:
+        \begin{itemize}
+            \item Ścieżka  $A: 1 \to 2 \to 4$, o koszcie $c_A =1$ i czasie $t_A=10$,
+            \item Ścieżka $B: 1 \to 3 \to 4$, o koszcie $c_B=10$ i czasie $t_B=2$.
+        \end{itemize}
+        Przyjmując $T_{max} = 6$ przy założeniu całkowitoliczbowości zmiennych decyzyjnych, jedyną możliwą ścieżką jest $B$ o koszcie 10, tylko w niej zostaje spełnione ograniczenie czasowe.\\
+        Natomiast relaksując założenie o całkowitoliczbowości: $x_{ij} \in [0,1]$, optymalnym rozwiązaniem byłoby $x_{12} = x_{24} = x_{13} = x_{34} = 0.5$, co odpowiadałoby trasie będącej połową ścieżki $A$ i połową ścieżki $B$. W takim przypadku koszt wyniósłby $c= \frac{1}{2} + \frac{10}{2} = 5.5$, a czas $t = \frac{10}{2} + \frac{2}{2} = 6$, co spełnia ograniczenie czasowe.\\
+        Zatem istnieją różne optymalne rozwiązania w zależności od założenia o całkowitoliczbowości zmiennych decyzyjnych.
+    \item Po usunięciu ograniczenia na czas przejazu oraz całkowitoliczbowość dostajemy problem najtańszego przepływu w sieci. %TODO rozwinac 4d
+\end{enumerate}
 
+\section{Zadanie 5.}
+W zadaniu 5. należy rozwiązać problem podany na 2. liście ćwiczeń.
 
 
 

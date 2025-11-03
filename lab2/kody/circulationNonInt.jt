@@ -1,0 +1,115 @@
+# Jakub Kogut
+using JuMP
+using HiGHS
+using TOML
+import MathOptInterface as MOI
+
+function loadData(path::AbstractString)
+    d = TOML.parsefile(path)
+    N     = Int(d["N"])
+    s     = Int(d["s"])
+    tnode = Int(d["t"])
+    Tmax  = Float64(d["Tmax"])
+    arcs_raw = d["arcs"]
+
+    I = Int[]; J = Int[]; C = Float64[]; T = Float64[]
+    for a in arcs_raw
+        push!(I, Int(a["i"]))
+        push!(J, Int(a["j"]))
+        push!(C, Float64(a["c"]))
+        push!(T, Float64(a["t"]))
+    end
+    return N, s, tnode, Tmax, I, J, C, T
+end
+
+function solve_rcsp(N::Int, s::Int, tnode::Int, Tmax::Float64,
+                    I::Vector{Int}, J::Vector{Int}, C::Vector{Float64}, T::Vector{Float64};
+                    tol::Float64 = 1e-7)
+
+    A = collect(1:length(I))
+
+    #listy sąsiedztwa
+    out_arcs = [Int[] for _ in 1:N]
+    in_arcs  = [Int[] for _ in 1:N]
+    for a in A
+        push!(out_arcs[I[a]], a)
+        push!(in_arcs[J[a]], a)
+    end
+
+    model = Model(HiGHS.Optimizer)
+    set_silent(model)
+
+    #ZMIENNE CIĄGŁE 
+    @variable(model, 0 .<= x[A] .<= 1)
+
+    #bilans przepływu (źródło +1, ujście -1, reszta 0)
+    @constraint(model, [v in 1:N],
+        sum(x[a] for a in out_arcs[v]) - sum(x[a] for a in in_arcs[v]) ==
+            (v == s ? 1 : v == tnode ? -1 : 0)
+    )
+
+    #ograniczenie zasobu (czas)
+    @constraint(model, sum(T[a] * x[a] for a in A) <= Tmax)
+
+    #cel: minimalizacja kosztu
+    @objective(model, Min, sum(C[a] * x[a] for a in A))
+
+    optimize!(model)
+
+    st = termination_status(model)
+    primal = primal_status(model)
+    println("=== RCSP (LP) ===")
+    println("Status: ", st, " | Primal: ", primal)
+
+    if st != MOI.OPTIMAL && st != MOI.LOCALLY_SOLVED
+        println("Uwaga: rozwiązanie może być nieoptymalne/niedokładne.")
+    end
+
+    xval = value.(x)
+
+    total_cost = sum(C[a] * xval[a] for a in A)
+    total_time = sum(T[a] * xval[a] for a in A)
+
+    println("Koszt (LP): ", round(total_cost, digits=6))
+    println("Czas  (LP): ", round(total_time, digits=6), "  (Tmax = ", Tmax, ")")
+    if total_time > Tmax + 1e-6
+        println("UWAGA: przekroczono ograniczenie czasu!")
+    end
+
+    # wypis dodatnich przepływów
+    used = [a for a in A if xval[a] > tol]
+    println("\nŁuki dodatnie w rozwiązaniu LP (x, i, j, [c|t]):")
+    for a in used
+        println("  x=", round(xval[a], digits=6), " : (", I[a], ", ", J[a], ") [", C[a], " | ", T[a], "]")
+    end
+    if isempty(used)
+        println("  (brak dodatnich przepływów)")
+    end
+
+    # test "ułamkowości" rozwiązania
+    frac = any(a -> (xval[a] > tol && xval[a] < 1 - tol), A)
+    println("\nCzy rozwiązanie jest ułamkowe? ", frac ? "TAK" : "NIE")
+
+    # weryfikacja bilansu (diagnostyka)
+    println("\nNaruszenia bilansu (powinny być 0):")
+    for v in 1:N
+        bal = sum(xval[a] for a in out_arcs[v]) - sum(xval[a] for a in in_arcs[v]) -
+              (v == s ? 1.0 : v == tnode ? -1.0 : 0.0)
+        if abs(bal) > 1e-6
+            println("  węzeł ", v, ": ", bal)
+        end
+    end
+
+    return xval, total_cost, total_time
+end
+
+function main()
+    if length(ARGS) < 1
+        println("Użycie: julia circulationNonInt.jl <plik.toml>")
+        return
+    end
+    N, s, tnode, Tmax, I, J, C, T = loadData(ARGS[1])
+    solve_rcsp(N, s, tnode, Tmax, I, J, C, T)
+end
+
+main()
