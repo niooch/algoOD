@@ -510,9 +510,141 @@ otrzymujemy następujące rozwiązanie:
 \end{enumerate}
 
 \section{Zadanie 5.}
-W zadaniu 5. należy rozwiązać problem podany na 2. liście ćwiczeń.
+W zadaniu 5. należy rozwiązać problem podany na 2. liście ćwiczeń. Pojawia się tutaj problem \textit{MIN COST CIRCULATION}, który polega na znalezieniu najtańszego przepływu w sieci z określonymi kosztami i pojemnościami na krawędziach oraz z ograniczeniami na przepływ w wierzchołkach. Konkretnie w zadaniu mamy zminimaliować lączną liczbe radiowozów wystawionych do patroli w różnych dzielnicach miasta.
+\subsection{Opis modelu}
+Mamy dane:
+\begin{itemize}
+    \item Zbiór dzielnic $P = \{1, 2, \ldots, n\}$, gdzie $n$ to liczba dzielnic.
+    \item Zbiór zmian $S = \{1, 2, \ldots, m\}$, gdzie $m$ to liczba zmian.
+    \item Macierze ograniczeń dolnych i górnych na liczbę radiowozów $U_{ij}, L_{ij}$ gdzie $i \in P$, $j \in S$,
+    \item Wektor minimalnej liczby dostępnych radiowozów w dzielnicy $a_i$, gdzie $i \in P$,
+    \item Wektor minimalnej potrzebnej liczby radiowozów w zmianie $b_j$, gdzie $j \in S$,
+\end{itemize}
+\subsubsection{Definicje zmiennych decyzyjnych}
+Zmiennymi decyzyjnymi są:
+\begin{itemize}
+    \item $x_{ij}$ -- liczba radiowozów przydzielonych do dzielnicy $i \in P$ w zmianie $j \in S$. Zakładamy całkowitoliczbowość zmiennych decyzyjnych: $x_{ij} \in \mathbb{Z}_{\geq 0}$.
+\end{itemize}
+\subsubsection{Funkcja celu}
+Celem jest minimalizacja całkowitej liczby radiowozów przydzielonych do patroli, co można zapisać jako:
+\[
+    \min \sum_{i \in P} \sum_{j \in S} x_{ij}
+\]
+\subsubsection{Ograniczenia}
+Ograniczenia, które musi spełniać model to:
+\begin{itemize}
+    \item Dla każdej dzielnicy $i \in P$ liczba radiowozów przydzielonych we wszystkich zmianach musi być co najmniej równa minimalnej wymaganej liczbie radiowozów:
+        \[
+            \sum_{j \in S} x_{ij} \geq a_i
+        \]
+    \item Dla każdej zmiany $j \in S$ liczba radiowozów przydzielonych we wszystkich dzielnicach musi być co najmniej równa minimalnej wymaganej liczbie radiowozów:
+        \[
+            \sum_{i \in P} x_{ij} \geq b_j
+        \]
+    \item Liczba radiowozów przydzielonych do dzielnicy $i \in P$ w zmianie $j \in S$ musi mieścić się w określonych granicach:
+        \[
+            L_{ij} \leq x_{ij} \leq U_{ij}
+        \]
+\end{itemize}
+Model będzie musiał znaleść optymalny przepływ w sieci pokazanaje na rysunku poniżej:
+%graf wlasnyGraf/dzielnice.png
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.8\textwidth]{wlasnyGraf/dzielnice.png}
+    \caption{Model sieciowy problemu przydziału radiowozów do patroli w dzielnicach.}
+    \label{fig:dzielnice}
+\end{figure}
+\subsection{Opis rozwiązywanych egzemplarzy}
+Kod rozwiązujący egzemplarze znajduje się w pliku \texttt{kody/dzielnice.jl}. W pliku należy podać dane reprezentujące sieć postaci: $(i,j,c,l,u)$, gdzie $i$ to dzielnica, $j$ to zmiana, $c$ to koszt jednostkowy przepływu (tutaj zawsze 1), $l$ to dolna granica przepływu, $u$ to górna granica przepływu. Dla podanych w zadaniu danych otrzymujemy następujące rozwiązanie:
+\begin{itemize}
+%Łuki z dodatnim przepływem: (i,j) [l..u | c]  x=
+    \item Całkowita liczba radiowozów przydzielonych do patroli wynosi \num{48}.
+    \item Szczegóły przydziału radiowozów do dzielnic i zmian przedstawia się następująco:
+        \begin{verbatim}
+Łuki z dodatnim przepływem: (i,j) [l..u | c]  x=
+  (1, 2) [10.0..Inf | 1.0]  x=10.0
+  (1, 3) [20.0..Inf | 1.0]  x=20.0
+  (1, 4) [18.0..Inf | 1.0]  x=18.0
+  (2, 5) [2.0..3.0 | 0.0]  x=2.0
+  (2, 6) [3.0..5.0 | 0.0]  x=3.0
+  (2, 7) [5.0..8.0 | 0.0]  x=5.0
+  (3, 5) [4.0..7.0 | 0.0]  x=4.0
+  (3, 6) [6.0..7.0 | 0.0]  x=6.0
+  (3, 7) [7.0..12.0 | 0.0]  x=10.0
+  (4, 5) [3.0..5.0 | 0.0]  x=5.0
+  (4, 6) [5.0..10.0 | 0.0]  x=5.0
+  (4, 7) [6.0..10.0 | 0.0]  x=8.0
+  (5, 8) [10.0..Inf | 0.0]  x=11.0
+  (6, 8) [14.0..Inf | 0.0]  x=14.0
+  (7, 8) [13.0..Inf | 0.0]  x=23.0
+  (8, 1) [0.0..Inf | 0.0]  x=48.0
+        \end{verbatim}
+\end{itemize}
 
-
-
+\section{Zadanie 6.}
+W zdaaniu 6. pojawia się problem \textit{MIN COVER SET}. W tej konktetnej instancji musimy znaleźć optymalne rozmieszczenie minimalnej ilości kamer potrzebnych do monitorowania placu z konternerami.
+\subsection{Opis modelu}
+Mamy dane:
+\begin{itemize}
+    \item Siatkę $V=\{1,\dots, n\} \times \{1,\dots, m\}$ reprezentującą plac z kontenerami o rozmiarze $n \times m$,
+    \item Zbiór z miejscami zajętymi przez kontenery $C \subseteq V$,
+    \item Liczbe $k$ reprezentującą zasięg kamery (w jednostkach kratki siatki). Kamera widzi we wszytkich kierunkach pokrywając obszar w kształcie krzyża.\footnote{W poleceniu nie jest to do końca jasno sprecyzowane, czy kamera widzi w kształcie kwadratu, czy jednak krzyża, ale przyjmuję drugi wariant.}
+\end{itemize}
+Możemy zdefinować relację widoczności\footnote{Zakładam, że kamera widzi ponad kontenerami.} $\approx$ pomiędzy miejscami na siatce $V$. Niech $p=(r,c), q=(s,d) \in V$ to dwa miejsca na siatce. Wtedy:
+\[
+    p\approx q\iff (r = s \land |c-d| \leq k) \lor (c = d \land |r-s| \leq k)
+\]
+Na podstawie tej relacji możemy zdefiniować zbiór miejsc widocznych z miejsca $p \in V$:
+\[
+    W(p) = \{ q \in V : p \approx q \}
+\]
+\subsubsection{Definicje zmiennych decyzyjnych}
+Zmiennymi decyzyjnymi są:
+\begin{itemize}
+    \item $x_{rc} \in \{0,1\}$ -- zmienna binarna wskazująca, czy w miejscu $(r,c) \in V$ została zainstalowana kamera.
+\end{itemize}
+\subsubsection{Funkcja celu}
+Celem jest minimalizacja całkowitej liczby zainstalowanych kamer, co można zapisać jako:
+\[
+    \min \sum_{(r,c) \in V} x_{rc}
+\]
+\subsubsection{Ograniczenia}
+Ograniczenia, które musi spełniać model to:
+\begin{itemize}
+    \item Kamery można instalować tylko w miejscach nie zajętych przez kontenery:
+        \[
+            x_{rc} = 0, \quad \forall (r,c) \in C
+        \]
+    \item Każde miejsce zajęte przez kontener $p \in C$ musi być widoczne z co najmniej jednej kamery:
+        \[
+            \forall p \in C: \sum_{q \in V\setminus C : \quad p \approx q} x_{q} \geq 1,
+        \]
+    \item Zmienne decyzyjne są binarne:
+        \[
+             \forall (r,c) \in V: x_{rc} \in \{0,1\},
+        \]
+\end{itemize}
+\subsection{Opis rozwiązywanych egzemplarzy}
+Kod rozwiązujący egzemplarze znajduje się w pliku \texttt{kody/kamery.jl}. W pliku należy podać dane:
+\begin{itemize}
+    \item $n$ -- liczba wierszy siatki,
+    \item $m$ -- liczba kolumn siatki,
+    \item $k$ -- zasięg kamery,
+    \item $containers$ -- lista krotek reprezentujących miejsca zajęte przez kontenery,
+\end{itemize}
+Dla egzemplarza $10\times 12$ z $40$ kontenerami otrzymujemy następujące rozwiązanie:
+\begin{itemize}
+    \item Dla $k=2$ minimalna liczba kamer wynosi 12,
+    \item Dla $k=5$ minimalna liczba kamer wynosi 8.
+\end{itemize}
+Poniżej wizualizacja rozwiązań dla obu zasięgów kamer:
+%graf wlasnyGraf/kameryWizualizacja.png
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=1.0\textwidth]{wlasnyGraf/kameryWizualizacja.png}
+    \caption{Wizualizacja rozmieszczenia kamer dla zasięgów $k=2$ (po lewej) oraz $k=
+    5$ (po prawej).}
+    \label{fig:kameryWizualizacja}
+\end{figure}
 \end{document}
 

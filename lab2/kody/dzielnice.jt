@@ -1,0 +1,100 @@
+# Jakub Kogut
+using JuMP
+using HiGHS
+using TOML
+import MathOptInterface as MOI
+
+function loadData(path::AbstractString)
+    d = TOML.parsefile(path)
+    N = Int(d["N"])
+    arcs_raw = d["arcs"]
+
+    I = Int[]; J = Int[]; C = Float64[]; L = Float64[]; U = Float64[]
+    for a in arcs_raw
+        push!(I, Int(a["i"]))
+        push!(J, Int(a["j"]))
+        push!(C, Float64(a["c"]))
+        push!(L, Float64(a["l"]))
+        u = a["u"]
+        push!(U, (u === "inf" || u === "Inf") ? Inf : Float64(u))
+    end
+    return N, I, J, C, L, U
+end
+
+function solve_circulation(N::Int,
+                           I::Vector{Int}, J::Vector{Int},
+                           C::Vector{Float64},
+                           L::Vector{Float64}, U::Vector{Float64};
+                           tol::Float64 = 1e-7)
+
+    A = collect(1:length(I))
+
+    out_arcs = [Int[] for _ in 1:N]
+    in_arcs  = [Int[] for _ in 1:N]
+    for a in A
+        push!(out_arcs[I[a]], a)
+        push!(in_arcs[J[a]], a)
+    end
+
+    model = Model(HiGHS.Optimizer)
+    set_silent(model)
+
+    @variable(model, f[A])  # przepływy
+
+    for a in A
+        @constraint(model, f[a] >= L[a])
+        if isfinite(U[a])
+            @constraint(model, f[a] <= U[a])
+        end
+    end
+
+    # bilanse (cyrkulacja)
+    @constraint(model, [v in 1:N],
+        sum(f[a] for a in out_arcs[v]) - sum(f[a] for a in in_arcs[v]) == 0
+    )
+
+    # cel
+    @objective(model, Min, sum(C[a] * f[a] for a in A))
+
+    optimize!(model)
+
+    st = termination_status(model)
+    ps = primal_status(model)
+    println("=== Min-Cost Circulation (HiGHS) ===")
+    println("Status: ", st, " | Primal: ", ps)
+
+    fval = value.(f)
+    cost = sum(C[a] * fval[a] for a in A)
+    println("Wartość celu (koszt): ", round(cost, digits=6))
+
+    used = [a for a in A if fval[a] > tol]
+    println("\nŁuki z dodatnim przepływem: (i,j) [l..u | c]  x=")
+    for a in used
+        ustr = isfinite(U[a]) ? string(U[a]) : "Inf"
+        println("  (", I[a], ", ", J[a], ") [", L[a], "..", ustr, " | ", C[a], "]  x=", round(fval[a], digits=6))
+    end
+    if isempty(used)
+        println("  (brak dodatnich przepływów)")
+    end
+
+    println("\nNaruszenia bilansów (out-in):")
+    for v in 1:N
+        bal = sum(fval[a] for a in out_arcs[v]) - sum(fval[a] for a in in_arcs[v])
+        if abs(bal) > 1e-6
+            println("  węzeł ", v, ": ", bal)
+        end
+    end
+
+    return fval, cost
+end
+
+function main()
+    if length(ARGS) < 1
+        println("Użycie: julia dzielnice.jl <plik.toml>")
+        return
+    end
+    N, I, J, C, L, U = loadData(ARGS[1])
+    solve_circulation(N, I, J, C, L, U)
+end
+
+main()

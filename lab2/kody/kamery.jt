@@ -1,0 +1,124 @@
+# Jakub Kogut
+using JuMP
+using HiGHS
+using TOML
+import MathOptInterface as MOI
+
+const Cell = Tuple{Int,Int}
+
+function loadData(path::AbstractString)
+    d = TOML.parsefile(path)
+    m = Int(d["m"])
+    n = Int(d["n"])
+    k = Int(d["k"])
+    conts_raw = d["containers"]
+    containers = Cell[(Int(p[1]), Int(p[2])) for p in conts_raw]
+    return m, n, k, containers
+end
+
+#relacja widzenia
+function coverage_from(p::Cell, m::Int, n::Int, k::Int)
+    r, c = p
+    cov = Cell[]
+    # wiersz
+    for dc in -k:k
+        dc == 0 && continue
+        c2 = c + dc
+        1 <= c2 <= n || continue
+        push!(cov, (r, c2))
+    end
+    # kolumna
+    for dr in -k:k
+        dr == 0 && continue
+        r2 = r + dr
+        1 <= r2 <= m || continue
+        push!(cov, (r2, c))
+    end
+    return cov
+end
+
+function build_sets(m::Int, n::Int, containers::Vector{Cell}, k::Int)
+    cont_set = Set(containers)
+    candidates = Cell[]
+    for r in 1:m, c in 1:n
+        (r,c) in cont_set && continue
+        push!(candidates, (r,c))
+    end
+    cam_id  = Dict{Cell,Int}(((p,i) for (i,p) in enumerate(candidates)))
+    cont_id = Dict{Cell,Int}(((q,i) for (i,q) in enumerate(containers)))
+
+    covers = [Int[] for _ in 1:length(containers)]
+    for (p, pid) in cam_id
+        for q in coverage_from(p, m, n, k)
+            if haskey(cont_id, q)
+                push!(covers[cont_id[q]], pid)
+            end
+        end
+    end
+    return candidates, containers, covers
+end
+
+function solve_cameras(m::Int, n::Int, k::Int, containers::Vector{Cell}; tol::Float64=1e-7)
+    candidates, cont_vec, covers = build_sets(m, n, containers, k)
+    P = collect(1:length(candidates))
+    Q = collect(1:length(cont_vec))
+
+    model = Model(HiGHS.Optimizer)
+    set_silent(model)
+
+    @variable(model, x[P], Bin)
+
+    # każdy kontener pokryty przez co najmniej 1 kamerę
+    for q in Q
+        if isempty(covers[q])
+            error("Kontener $(cont_vec[q]) nie może być pokryty dla k=$k (brak widocznych kandydatów).")
+        end
+        @constraint(model, sum(x[p] for p in covers[q]) >= 1)
+    end
+
+    @objective(model, Min, sum(x[p] for p in P))
+
+    optimize!(model)
+
+    st = termination_status(model)
+    ps = primal_status(model)
+
+    println("\n=== Kamery (HiGHS) | k = $k ===")
+    println("Status: ", st, " | Primal: ", ps)
+
+    if st != MOI.OPTIMAL && st != MOI.LOCALLY_SOLVED
+        println("Uwaga: rozwiązanie może być nieoptymalne / niedokładne.")
+    end
+
+    xval = value.(x)
+    used = [p for p in P if xval[p] > 0.5]
+    println("Minimalna liczba kamer: ", length(used))
+    println("Pozycje kamer (wiersz, kolumna):")
+    for p in used
+        println("  ", candidates[p])
+    end
+
+    println("Weryfikacja pokrycia:")
+    for (i, qcell) in enumerate(cont_vec)
+        covered = any(xval[p] > 0.5 for p in covers[i])
+        println("  kontener ", qcell, " - ", covered ? "OK" : "BRAK")
+    end
+
+    return [candidates[p] for p in used]
+end
+
+function main()
+    if length(ARGS) < 1
+        println("Użycie: julia kamery.jl <plik.toml>")
+        return
+    end
+    m, n, k, containers = loadData(ARGS[1])
+
+    println("Siatka: $(m)x$(n)")
+    println("k: ", k)
+    println("Kontenery: ", containers)
+
+    solve_cameras(m, n, k, containers)
+end
+
+main()

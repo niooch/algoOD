@@ -1,0 +1,13 @@
+m = 5
+n = 5
+k = 2
+
+# kontenery (wiersz, kolumna), 1-indexed
+containers = [
+  [2, 2],
+  [2, 4],
+  [3, 3],
+  [4, 2],
+  [4, 4]
+]
+

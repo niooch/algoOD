@@ -1,0 +1,32 @@
+N = 8
+# Każdy łuk ma: i (tail), j (head), c (koszt), l (dolna granica), u (górna granica; "Inf" = bez ograniczenia)
+arcs = [
+  # r -> S_j  (koszt 1; minima zmian a = [10,20,18])
+  { i = 1, j = 2, c = 1, l = 10, u = "Inf" },
+  { i = 1, j = 3, c = 1, l = 20, u = "Inf" },
+  { i = 1, j = 4, c = 1, l = 18, u = "Inf" },
+
+  # S1 -> P_i  (L/U z tabel)
+  { i = 2, j = 5, c = 0, l = 2,  u = 3  },   # p1, zmiana 1
+  { i = 2, j = 6, c = 0, l = 3,  u = 5  },   # p2, zmiana 1
+  { i = 2, j = 7, c = 0, l = 5,  u = 8  },   # p3, zmiana 1
+
+  # S2 -> P_i
+  { i = 3, j = 5, c = 0, l = 4,  u = 7  },   # p1, zmiana 2
+  { i = 3, j = 6, c = 0, l = 6,  u = 7  },   # p2, zmiana 2
+  { i = 3, j = 7, c = 0, l = 7,  u = 12 },   # p3, zmiana 2
+
+  # S3 -> P_i
+  { i = 4, j = 5, c = 0, l = 3,  u = 5  },   # p1, zmiana 3
+  { i = 4, j = 6, c = 0, l = 5,  u = 10 },   # p2, zmiana 3
+  { i = 4, j = 7, c = 0, l = 6,  u = 10 },   # p3, zmiana 3
+
+  # P_i -> t  (minima dzielnic b = [10,14,13])
+  { i = 5, j = 8, c = 0, l = 10, u = "Inf" },
+  { i = 6, j = 8, c = 0, l = 14, u = "Inf" },
+  { i = 7, j = 8, c = 0, l = 13, u = "Inf" },
+
+  # domknięcie cyrkulacji
+  { i = 8, j = 1, c = 0, l = 0,  u = "Inf" }
+]
+
