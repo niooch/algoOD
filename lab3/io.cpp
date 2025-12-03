@@ -94,7 +94,7 @@ void saveP2P(
         const std::string& graphFile,
         const std::string& p2pFile,
         const GraphMeta& meta) {
-    out << "c Przyklad pliku wynikowego wyniki.p2p.res dla problemu\n";
+    out << "c plik wynikowy dla problemu\n";
     out << "c najkrotszej sciezki miedzy para wierzcholkow.\n";
     out << "c\n";
     out << "c wyniki testu dla sieci zadanej w pliku " << graphFile << "\n";

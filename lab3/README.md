@@ -9,6 +9,7 @@ Celem było zaimplementowanie algotytmów znajdowania najkrótszych ścieżek w 
 1. Algorytm Dijkstry z użyciem priorytetowej kolejki binarnej (standardowa biblioteka C++).
 2. Algotytm Diala z C + 1 kubełkami.
 3. Algorytm Radix Heap.
+Implementacje znajdują się w katalogu `algo.cpp`.
 
 ## Instrukcja kompilacji i uruchamiania:
 Programy można skompilować przy użyciu `make`. Używane są wyłącznie standardowe biblioteki C++.
@@ -27,3 +28,4 @@ Oraz dla *pair to pair*:
 
 ## Dane 
 Dane testowe zostały wygenerowane przy użyciu paczki DIMACS. Znajdują się one w katalogu `inputs/`.
+

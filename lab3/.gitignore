@@ -1,1 +1,5 @@
 inputs/
+*.o
+dijkstra
+dial
+radixheap
