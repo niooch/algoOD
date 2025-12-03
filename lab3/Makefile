@@ -1,9 +1,12 @@
 CXX = g++
-CXXFLAGS = -O3 -std=c++17 -Wall -Wextra -pedantic
+CXXFLAGS = -g -std=c++17 -Wall -Wextra -pedantic
 
 OBJS_COMMON = graph.o io.o cli.o algo.o
 
-all: dijkstra
+all: dijkstra dial
+
+dial: dial.o $(OBJS_COMMON)
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
 dijkstra: dijkstra.o $(OBJS_COMMON)
 	$(CXX) $(CXXFLAGS) -o $@ $^
@@ -24,7 +27,7 @@ dijkstra.o: dijkstra.cpp graph.h io.h cli.h common.h algo.h
 	$(CXX) $(CXXFLAGS) -c dijkstra.cpp
 
 clean:
-	rm -f *.o dijkstra
+	rm -f *.o dijkstra dial *.res
 
 .PHONY: all clean
 

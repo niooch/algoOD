@@ -3,3 +3,7 @@ inputs/
 dijkstra
 dial
 radixheap
+*.ss
+*.p2p
+*.res
+*.gr
