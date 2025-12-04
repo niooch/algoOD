@@ -41,8 +41,19 @@
 Na liście 3. mamy za zadanie przeprowadzić implementację i analizę algorytmów znajdowania najkrótszych ścieżek w grafach. Za dane mamy użyć grafy wygenerowane przez generator oraz sieć drogową USA napisane przez \texttt{DIMACS}.
 
 \section{Implementacja}
-Wszystkie zadania zaimplementowałem w języku \texttt{C++}. Kody algorytmów znajdują się w \texttt{algo.cpp}, natomiast instrukcje uruchamiania w \texttt{README.md}.
-\subsection{Algorytm Dijkstry}
+Wszystkie zadania zaimplementowałem w języku \texttt{C++}. Kody algorytmów znajdują się w \texttt{algo.cpp}, natomiast instrukcje uruchamiania w \texttt{README.md}. Wszytkie programy kożystają wyłącznie z biblioteki standardowej \texttt{C++}, można je kompilować przy użyciu \texttt{make}
+\subsection{Algorytm \texttt{DIJKSTRY}}
+Algorytm Dijkstry zaimplementowałem przy użyciu kolejki priorytetowej \texttt{std::priority\_queue} z biblioteki standardowej \texttt{C++}. Jej złożoność na operacje \texttt{push} i \texttt{pop} wynosi \(O(\log n)\), gdzie \(n\) to liczba elementów w kolejce. W najgorszym przypadku algorytm Dijkstry odwiedza wszystkie wierzchołki i krawędzie grafu, co daje łączną złożoność czasową \(O((V + E) \log V)\), gdzie \(V\) to liczba wierzchołków, a \(E\) to liczba krawędzi w grafie.
+
+\subsection{Algorytm \texttt{DIALA}}
+
+\subsection{Algorytm \texttt{RADIX-HEAP}}
+
+\section{Analiza rodzin grafów}
+
+\section{Wyniki, wnioski}
+
+\section{Podsumowanie}
 
 \end{document}
 

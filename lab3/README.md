@@ -19,7 +19,7 @@ Odpowiednio dla zadania *single source*
 ./dial -d plik_z_danymi.gr -ss zrodla.ss -oss wyniki.ss.res
 ./radix_heap -d plik_z_danymi.gr -ss zrodla.ss
 ```
-Oraz dla *pair to pair*:
+Oraz dla *point to point*:
 ```bash
 ./dijkstra -d plik_z_danymi.gr -p2p pary.p2p -op2p wyniki.p2p.res
 ./dial -d plik_z_danymi.gr -p2p pary.p2p -op2p wyniki.p2p.res

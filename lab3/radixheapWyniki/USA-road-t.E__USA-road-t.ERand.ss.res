@@ -1,0 +1,14 @@
+c Plik wynikowy dla problemu najkrotszej sciezki z jednym zrodlem
+c Algorytm: radixheap
+p res sp ss radixheap
+c
+c Plik testowy grafu: inputs/USA-road-t.E.gr
+c Plik testowy zrodel: ss/USA-road-t.ERand.ss
+f inputs/USA-road-t.E.gr ss/USA-road-t.ERand.ss
+c
+c Siec sklada sie z 3598623 wierzcholkow i 8778114 krawedzi.
+c Koszt krawedzi zawiera sie w przedziale [1, 501901].
+g 3598623 8778114 1 501901
+c
+c Sredni czas wyznaczenia najkrotszych sciezek między zrodlem a wszystkimi wierzcholkami: 1062.69 ms.
+t 1062.69

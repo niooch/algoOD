@@ -1,9 +1,6 @@
 inputs/
 *.o
-dijkstra
-dial
-radixheap
-*.ss
-*.p2p
-*.res
 *.gr
+dial
+dijkstra
+radixheap
