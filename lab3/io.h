@@ -8,7 +8,7 @@
 #include "common.h"
 
 struct SingleSourceSet {
-    std::string sources;
+    std::vector<long long> sources;
 };
 
 SingleSourceSet loadSS(const std::string& path);

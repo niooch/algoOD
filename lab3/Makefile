@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -g -std=c++17 -Wall -Wextra -pedantic
+CXXFLAGS = -O3 -std=c++17 -Wall -Wextra -pedantic
 
 OBJS_COMMON = graph.o io.o cli.o algo.o
 

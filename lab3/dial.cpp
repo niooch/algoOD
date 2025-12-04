@@ -22,7 +22,7 @@ int main(int argc, char* argv[]){
             if (ss.sources.empty()) {
                 throw std::runtime_error("brak zrodel w pliku zrodla -ss");
             }
-
+            //print sources
             std::vector<Distance> dist;
             double elapsed = 0.0;
             int count = 0;

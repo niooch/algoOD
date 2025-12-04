@@ -1,0 +1,48 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[polish]{babel}
+\usepackage{lmodern}
+\usepackage[final]{microtype}
+
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{} % czyść wszystko
+\lhead{Notatki z matematyki}
+\rhead{\leftmark}
+\cfoot{\thepage}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{siunitx} 
+\sisetup{locale = DE}
+\usepackage{bm}     
+
+\usepackage[hidelinks]{hyperref}
+\usepackage[nameinlink,capitalise,noabbrev]{cleveref}
+\usepackage{csquotes}
+
+\usepackage{enumitem}
+\setlist{noitemsep,topsep=3pt}
+\usepackage{xcolor}
+
+\numberwithin{equation}{section}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{2}
+
+\title{Sprawozdanie -- Laboratoria 3.}
+\author{Jakub Kogut}
+\date{\today}
+
+\begin{document}
+\maketitle
+\section{Wprowadzenie}
+Na liście 3. mamy za zadanie przeprowadzić implementację i analizę algorytmów znajdowania najkrótszych ścieżek w grafach. Za dane mamy użyć grafy wygenerowane przez generator oraz sieć drogową USA napisane przez \texttt{DIMACS}.
+
+\section{Implementacja}
+Wszystkie zadania zaimplementowałem w języku \texttt{C++}. Kody algorytmów znajdują się w \texttt{algo.cpp}, natomiast instrukcje uruchamiania w \texttt{README.md}.
+\subsection{Algorytm Dijkstry}
+
+\end{document}
+
