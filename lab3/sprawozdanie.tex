@@ -5,6 +5,8 @@
 \usepackage[polish]{babel}
 \usepackage{lmodern}
 \usepackage[final]{microtype}
+\usepackage{graphicx}
+\usepackage{subcaption}
 
 \usepackage[a4paper,margin=2.5cm]{geometry}
 \usepackage{fancyhdr}
@@ -43,15 +45,521 @@ Na liście 3. mamy za zadanie przeprowadzić implementację i analizę algorytm�
 \section{Implementacja}
 Wszystkie zadania zaimplementowałem w języku \texttt{C++}. Kody algorytmów znajdują się w \texttt{algo.cpp}, natomiast instrukcje uruchamiania w \texttt{README.md}. Wszytkie programy kożystają wyłącznie z biblioteki standardowej \texttt{C++}, można je kompilować przy użyciu \texttt{make}
 \subsection{Algorytm \texttt{DIJKSTRY}}
-Algorytm Dijkstry zaimplementowałem przy użyciu kolejki priorytetowej \texttt{std::priority\_queue} z biblioteki standardowej \texttt{C++}. Jej złożoność na operacje \texttt{push} i \texttt{pop} wynosi \(O(\log n)\), gdzie \(n\) to liczba elementów w kolejce. W najgorszym przypadku algorytm Dijkstry odwiedza wszystkie wierzchołki i krawędzie grafu, co daje łączną złożoność czasową \(O((V + E) \log V)\), gdzie \(V\) to liczba wierzchołków, a \(E\) to liczba krawędzi w grafie.
+
+Graf przechowuję w klasycznej postaci list sąsiedztwa: dla każdego wierzchołka \(u\) tablica \texttt{g[u]} zawiera listę par \((v, w)\) oznaczających łuk \(u \to v\) o koszcie \(w\). Typ \texttt{Distance} jest aliasem na typ całkowity (w praktyce \texttt{long long}), a wartość \texttt{INF} reprezentuje „nieskończoną” odległość.
+
+Implementacja funkcji \texttt{dijkstra} odpowiada kopcowej wersji algorytmu Dijkstry, w której operację wyboru wierzchołka o najmniejszej etykiecie realizuje się przez kolejkę priorytetową. \texttt{std::priority\_queue} przechowuje pary \((\textit{dystans}, \textit{wierzchołek})\), a dzięki komparatorowi \texttt{std::greater} działa jak kopiec minimalny. Zamiast operacji \texttt{decrease-key} stosuję typowy „leniwy” wariant: przy każdej poprawie etykiety wierzchołka dokładam nową parę do kolejki, a przy wyjmowaniu ignoruję wpisy nieaktualne (sprawdzam warunek \texttt{if (d > dist[u]) continue;}).
+
+W uproszczonym pseudokodzie:
+
+\begin{verbatim}
+dijkstra(G, s):
+    for v in V:
+        dist[v] = INF
+    dist[s] = 0
+    PQ = min-kolejka priorytetowa par (odległość, wierzchołek)
+    PQ.push( (0, s) )
+
+    while PQ niepusta:
+        (d, u) = PQ.pop_min()
+        if d != dist[u]:
+            continue        // stary wpis w kolejce
+
+        for (v, w) w G[u]:
+            if d + w < dist[v]:
+                dist[v] = d + w
+                PQ.push( (dist[v], v) )
+\end{verbatim}
+
+Zgodnie z klasyczną analizą, dla kopca binarnego każda operacja \texttt{push}/\texttt{pop} ma koszt \(O(\log n)\). Wykonujemy \(O(n)\) operacji \texttt{pop} oraz \(O(m)\) wstawek, więc łączna złożoność czasowa wynosi
+\[
+T(n,m) = O\big((m + n)\log n\big),
+\]
+co w grafie spójnym zwykle zapisuje się jako \(O(m \log n)\). Złożoność pamięciowa to \(O(n + m)\) na przechowywanie grafu i tablicy odległości.
+
 
 \subsection{Algorytm \texttt{DIALA}}
 
-\subsection{Algorytm \texttt{RADIX-HEAP}}
+Algorytm Diala zakłada, że wszystkie koszty łuków są całkowite i nieujemne oraz że znamy z góry maksymalny koszt pojedynczej krawędzi
+\[
+C = \max\{c_{ij}\}.
+\]
+W implementacji przekazuję \(C\) jako dodatkowy parametr funkcji \texttt{dial}. Korzystam z wersji „cyklicznej”: zamiast \(nC+1\) kubełków używam tylko \(C+1\) kubełków indeksowanych modulo \(C+1\).
+
+Tablica \texttt{buckets} ma rozmiar \(\texttt{binCount} = C+1\), a kubełek o indeksie \(k\) przechowuje wierzchołki \(v\) z tymczasową etykietą
+\[
+d(v) \equiv k \pmod{C+1}.
+\]
+Dzięki własności, że w każdym momencie wszystkie skończone etykiety leżą w przedziale \([d_{\min}, d_{\min} + C]\), wystarczy \(C+1\) kubełków i indeksowanie modulo.
+
+W dużym uproszczeniu implementacja wygląda tak:
+
+\begin{verbatim}
+dial(G, s, C):
+    for v in V:
+        dist[v] = INF
+    dist[s] = 0
+
+    binCount = C + 1
+    buckets[0..binCount-1] = puste listy
+    currentBucket = 0
+    buckets[0].push_back(s)
+
+    while istnieje niepusty kubełek:
+        // szukamy pierwszego niepustego kubełka
+        steps = 0
+        while buckets[currentBucket] pusty
+              i steps < binCount:
+            currentBucket = (currentBucket + 1) mod binCount
+            steps++
+
+        if steps == binCount i buckets[currentBucket] pusty:
+            break   // wszystkie kubełki puste
+
+        u = ostatni element z buckets[currentBucket]
+        usuń u z tego kubełka
+        du = dist[u]
+
+        for (v, w) w G[u]:
+            if du + w < dist[v]:
+                dist[v] = du + w
+                idx = (dist[v]) mod binCount
+                buckets[idx].push_back(v)
+\end{verbatim}
+
+Kolejne wierzchołki są wybierane „wiadrami” o rosnących etykietach, co symuluje sortowanie po odległości, ale w czasie stałym na pojedynczą relaksację. Każdą krawędź relaksujemy co najwyżej raz z sukcesem, więc łączny koszt części \emph{distance update} jest \(O(m)\). Przeszukanie kubełków daje w najgorszym wypadku koszt \(O(nC)\), co prowadzi do złożoności:
+\[
+T(n,m,C) = O(m + nC), \qquad S(n,C) = O(n + C).
+\]
+Jest to więc algorytm pseudowielomianowy – zależny liniowo od maksymalnej wagi \(C\). Przy małych wartościach \(C\) (np. gdy wagi to małe liczby całkowite) algorytm Diala bywa w praktyce znacznie szybszy niż klasyczny Dijkstra.
+
+
+\subsection{Algorytm \texttt{RADIX HEAP}}
+
+Trzeci wariant to algorytm Dijkstry, w którym kolejkę priorytetową zaimplementowałem jako specjalizowaną strukturę \texttt{RadixHeap<Distance>}. Jest to monotoniczny \emph{radix heap}: zakładamy, że klucze (tu: aktualne odległości \(d(u)\)) są całkowite, nieujemne oraz że wartości wyjmowane z kopca są niemalejące. Ta własność zachodzi dla Dijkstry z wagami \(c_{ij} \ge 0\), dlatego w implementacji asercja \texttt{assert(x >= last);} sprawdza, czy nowy klucz nie jest mniejszy od ostatnio wyjętego.
+
+Struktura \texttt{RadixHeap} składa się z 65 kubełków \texttt{buckets[0..64]}, gdzie \texttt{U = unsigned long long} jest wewnętrznym typem klucza (wystarcza to dla \texttt{Distance = long long}). Kubełki mają zróżnicowane „szerokości”, wyznaczane przez najwyższy bit, na którym klucz różni się od \texttt{last}. Funkcja \texttt{bucketIndex(x)} oblicza indeks kubełka jako:
+\begin{itemize}
+  \item jeśli \(x = \texttt{last}\), zwraca 0,
+  \item w przeciwnym razie oblicza \(\texttt{diff} = x \oplus \texttt{last}\), znajduje pozycję najstarszego ustawionego bitu w \texttt{diff} i zwraca \(\texttt{msb} + 1\), co daje kubełki numerowane od 1 do 64.
+\end{itemize}
+
+Operacja \texttt{push} jedynie wrzuca element \((\texttt{key}, v)\) do odpowiedniego kubełka. Gdy kubełek 0 (z aktualnym minimum) się opróżni, wywoływana jest funkcja \texttt{pull}, która:
+\begin{enumerate}
+  \item wyszukuje pierwszy niepusty kubełek \(i > 0\),
+  \item wyznacza nową wartość \texttt{last} jako minimalny klucz znajdujący się w tym kubełku,
+  \item przenosi wszystkie elementy z kubełka \(i\) do kubełków o mniejszych indeksach, zgodnie z nową wartością \texttt{last}.
+\end{enumerate}
+Dzięki temu kubełek 0 zawsze zawiera elementy o najmniejszym aktualnym kluczu.
+
+Dijkstra z tą strukturą ma postać:
+
+\begin{verbatim}
+radixheap_dijkstra(G, s):
+    for v in V:
+        dist[v] = INF
+    dist[s] = 0
+
+    RH = pusty RadixHeap
+    RH.push(0, s)
+
+    while RH niepusty:
+        (d, u) = RH.top()
+        RH.pop()
+        if d > dist[u]:
+            continue        // stary wpis
+
+        for (v, w) w G[u]:
+            if dist[u] + w < dist[v]:
+                dist[v] = dist[u] + w
+                RH.push(dist[v], v)
+\end{verbatim}
+
+W strukturze Radix Heap każdy wierzchołek może zostać „przepakowany” pomiędzy kubełkami co najwyżej \(K = O(\log(nC))\) razy, gdzie \(C\) jest górnym ograniczeniem na długości najkrótszej ścieżki (tzn.\ na etykiety \(d(\cdot)\)). Łączny koszt wszystkich przeniesień i operacji wyboru wierzchołka to \(O(nK)\), natomiast relaksacje krawędzi kosztują \(O(m)\). Ostatecznie:
+\[
+T(n,m,C) = O\big(m + n \log(nC)\big).
+\]
+Przy odpowiednim doborze liczby kubełków można tę złożoność zapisać w postaci \(O(m + n \log C)\). W praktyce, dla grafów o umiarkowanych wagach całkowitych, wariant z \texttt{RadixHeap} łączy zalety algorytmu Diala (operacje w czasie prawie stałym dla małych wag) z dobrą skalowalnością dla większych wartości \(C\).
 
 \section{Analiza rodzin grafów}
+W części doświadczalnej korzystamy z rodzin grafów zdefiniowanych w ramach
+\emph{9th DIMACS Implementation Challenge}. Rodziny te
+zostały zaprojektowane tak, aby w kontrolowany sposób zmieniać:
+\begin{itemize}
+  \item strukturę grafu (losowy vs. siatka vs. sieć drogowa),
+  \item głębokość drzewa najkrótszych ścieżek i typowy rozmiar zbioru 
+        aktualnie etykietowanych wierzchołków,
+  \item zakres wag krawędzi \(C\) (istotny m.in.\ dla algorytmu Diala 
+        i \texttt{RadixHeap}).
+\end{itemize}
+Dzięki temu można obserwować, jak poszczególne struktury danych do Dijkstry 
+zachowują się w różnych warunkach.
+\subsection{Grafy losowe: rodziny \texttt{Random4-n} i \texttt{Random4-C} (podpunkt 3.1)}
 
+\subsubsection{Definicja i własności strukturalne}
+
+Grafy losowe są skierowane, z liczbą wierzchołków \(n\) i liczbą łuków 
+\(m = 4n\). Generator najpierw tworzy cykl Hamiltona (aby zapewnić silną 
+spójność), a następnie losuje dodatkowe łuki, wybierając pary 
+\((v,w)\), \(v \neq w\). Długości łuków są niezależnie i jednostajnie
+losowane z przedziału całkowitego \([0, C]\). :contentReference[oaicite:0]{index=0}
+
+Takie grafy:
+\begin{itemize}
+  \item są dobrymi \emph{ekspanderami} (przy średnim stopniu \(\ge 4\)),
+  \item mają płytkie drzewa najkrótszych ścieżek (głębokość 
+        rzędu \(\Theta(\log n)\)),
+  \item w trakcie działania algorytmu Dijkstry typowa liczba aktualnie 
+        etykietowanych wierzchołków jest duża,
+  \item mają słabą lokalność pamięciową (są „przemieszane”).
+\end{itemize}
+
+\paragraph{Rodzina \texttt{Random4-n}.}
+W rodzinie \texttt{Random4-n} rośnie liczba wierzchołków, a zakres wag
+jest związany z rozmiarem grafu:
+\[
+m = 4n, \quad C = n, \quad n = 2^{10}, 2^{11}, \dots, 2^{21}.
+\]
+Zmiana \(n\) powiększa zarówno liczbę krawędzi, jak i zakres wag.
+
+\paragraph{Rodzina \texttt{Random4-C}.}
+W rodzinie \texttt{Random4-C} rozmiar grafu jest stały, a rośnie tylko
+zakres wag:
+\[
+n = 2^{20}, \quad m = 4n, \quad C = 4^i, \ i = 0,1,\dots,15.
+\]
+
+\subsubsection{Wpływ na badane algorytmy}
+
+\begin{itemize}
+  \item \textbf{Dijkstra (kopiec binarny).}
+    Dla \texttt{Random4-n} złożoność teoretyczna to \(O(m \log n)\),
+    więc oczekujemy prawie liniowego wzrostu czasu z \(n\) pomnożonego
+    przez czynnik \(\log n\). Dla \texttt{Random4-C} struktura grafu się
+    nie zmienia, więc czas powinien być praktycznie niezależny od \(C\)
+    (zmienia się jedynie rozkład etykiet, nie zaś liczba operacji na kopcu).
+  \item \textbf{Dial.}
+    Złożoność \(O(m + nC)\) powoduje, że:
+    \begin{itemize}
+      \item w rodzinie \texttt{Random4-n} czynnik \(nC = n^2\) szybko 
+            dominuje, przez co Dial jest konkurencyjny tylko dla 
+            małych \(n\),
+      \item w rodzinie \texttt{Random4-C} dla stałego \(n\) czas rośnie
+            w przybliżeniu liniowo z \(C\); dla większych \(C\) algorytm
+            staje się wyraźnie wolniejszy niż Dijkstra i \texttt{RadixHeap}.
+    \end{itemize}
+  \item \textbf{Dijkstra + \texttt{RadixHeap}.}
+    Teoretyczna złożoność to \(O(m + n \log(nC))\). W praktyce:
+    \begin{itemize}
+      \item w \texttt{Random4-n} czas rośnie z \(n\), ale czynnik 
+            \(\log(nC) \approx \log n\) powoduje trochę łagodniejszy
+            wzrost niż w kopcu binarnym,
+      \item w \texttt{Random4-C} zależność od \(C\) jest bardzo słaba
+            (logarytmiczna), więc czas praktycznie nie zmienia się 
+            wraz z powiększaniem zakresu wag, w ostrym kontraście do Diala.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Grafy siatkowe: \texttt{Long-n}, \texttt{Square-n}, \texttt{Long-C}, \texttt{Square-C} (podpunkt 3.2)}
+
+\subsubsection{Definicja i własności strukturalne}
+
+Grafy siatkowe mają strukturę prostokątnej siatki \(x \times y\). Wierzchołki 
+są połączone z sąsiadami w górę, w dół, w lewo i w prawo (z wyjątkiem brzegów),
+a długości łuków są losowane z \([0, C]\). :contentReference[oaicite:1]{index=1}
+
+Rozróżniamy:
+\begin{itemize}
+  \item \textbf{Long grids} (\texttt{Long-*}) – „długie” siatki 
+        o stałej wysokości \(y = 16\) i rosnącej szerokości \(x\).
+        Drzewa najkrótszych ścieżek są bardzo głębokie \(\Theta(n)\), 
+        a liczba aktualnie etykietowanych wierzchołków jest mała.
+  \item \textbf{Square grids} (\texttt{Square-*}) – siatki „prawie kwadratowe”,
+        \(x \approx y \approx \sqrt{n}\). Drzewa najkrótszych ścieżek mają
+        umiarkowaną głębokość \(\Theta(\sqrt{n})\), a liczba etykietowanych
+        wierzchołków jest umiarkowana.
+\end{itemize}
+
+\subsubsection{Rodziny \texttt{Long-n} i \texttt{Square-n}}
+
+W rodzinach „-n” rośnie liczba wierzchołków, a zakres wag jest związany
+z rozmiarem:
+\[
+C = n,\quad n = 2^{10}, 2^{11}, \dots, 2^{21}.
+\]
+
+Porównanie:
+
+\begin{itemize}
+  \item \textbf{Struktura drzewa najkrótszych ścieżek.}
+    \begin{itemize}
+      \item W \texttt{Long-n} najkrótsze ścieżki są długie (prawie liniowe),
+            więc Dijkstra „idzie” po grafie dość sekwencyjnie; typowy 
+            rozmiar kolejki priorytetowej jest stosunkowo mały.
+      \item W \texttt{Square-n} ścieżki są krótsze, ale front fali BFS/Dijkstry 
+            jest szerszy, co prowadzi do większego zbioru etykietowanych
+            wierzchołków jednocześnie.
+    \end{itemize}
+  \item \textbf{Dijkstra (kopiec binarny).}
+    Dla obu rodzin złożoność asymptotyczna pozostaje \(O(m\log n)\),
+    ale w praktyce:
+    \begin{itemize}
+      \item w \texttt{Long-n} kolejka jest mniejsza, więc mimo tego samego
+            rzędu złożoności można oczekiwać nieco krótszych czasów,
+      \item w \texttt{Square-n} więcej operacji na kopcu (większy front),
+            co przekłada się na gorsze czasy niż w \texttt{Long-n} przy tym
+            samym \(n\).
+    \end{itemize}
+  \item \textbf{Dial i \texttt{RadixHeap}.}
+    Zakres wag \(C = n\) powoduje, że Dial teoretycznie ma koszt 
+    \(O(m + n^2)\) i przy większych rozmiarach będzie wyraźnie przegrywał
+    z pozostałymi algorytmami, mimo korzystnej struktury frontu.
+    \texttt{RadixHeap} pozostaje dużo bardziej odporne na wzrost \(C\), więc
+    różnice między \texttt{Long-n} i \texttt{Square-n} wynikają głównie
+    z rozmiaru frontu, nie z zakresu wag.
+\end{itemize}
+
+\subsubsection{Rodziny \texttt{Long-C} i \texttt{Square-C}}
+
+W rodzinach „-C” liczba wierzchołków jest stała (\(n = 2^{20}\) w definicji;
+w przypadku bardzo dużych \(C\) dopuszczamy zmniejszenie np.\ do \(n = 2^{15}\)),
+a rośnie jedynie zakres wag:
+\[
+C = 4^i,\quad i = 0,1,\dots,15.
+\]
+
+\begin{itemize}
+  \item \textbf{Dijkstra (kopiec binarny).}
+    Ponieważ struktura grafu się nie zmienia, a liczba operacji na kopcu
+    nie zależy bezpośrednio od wartości wag, czas działania praktycznie
+    nie zależy od \(C\) (dla bardzo dużych \(C\) może pojawić się jedynie
+    subtelny wpływ na kolejność relaksacji).
+  \item \textbf{Dial.}
+    Tutaj wpływ \(C\) jest kluczowy:
+    \begin{itemize}
+      \item dla małych \(C\) (np.\ \(C = 1,4,16\)) liczba kubełków jest mała,
+            więc algorytm Diala bywa bardzo szybki,
+      \item wraz ze wzrostem \(C\) czas rośnie praktycznie liniowo 
+            (koszt \(O(nC)\)), co dla największych wartości \(4^{15}\)
+            może prowadzić do bardzo długich czasów lub wręcz
+            przerwania testów; w takiej sytuacji sensowne jest 
+            zmniejszenie \(n\) (np.\ do \(2^{15}\)), aby mimo wszystko
+            zaobserwować trend zależności od \(C\).
+    \end{itemize}
+  \item \textbf{Dijkstra + \texttt{RadixHeap}.}
+    Teoretyczna złożoność \(O(m + n\log(nC))\) oznacza, że:
+    \begin{itemize}
+      \item przy rosnącym \(C\) obserwujemy bardzo łagodny wzrost czasu
+            (logarytmiczny w \(C\)),
+      \item \texttt{RadixHeap} jest dzięki temu dużo bardziej skalowalne
+            niż Dial; nawet dla dużych \(C\) pozostaje konkurencyjne wobec
+            kopca binarnego.
+      \item różnice między \texttt{Long-C} i \texttt{Square-C} wynikają
+            głównie z rozmiaru frontu (jak w rodzinach „-n”), a nie z \(C\).
+    \end{itemize}
+\end{itemize}
+
+\subsection{Grafy drogowe: rodziny \texttt{USA-road-d} i \texttt{USA-road-t} (podpunkt 3.3)}
+
+\subsubsection{Definicja i struktura sieci drogowych}
+
+Rodziny \texttt{USA-road-d} oraz \texttt{USA-road-t} opisują rzeczywiste sieci
+drogowe USA, zbudowane na podstawie danych TIGER/Line. 
+Poszczególne instancje (np.\ \texttt{USA}, \texttt{CTR}, \texttt{CAL}, \texttt{NY})
+różnią się rozmiarem, ale wszystkie:
+\begin{itemize}
+  \item są bardzo rzadkie (średni stopień niewielki, bliski stałemu),
+  \item mają silną strukturę geometryczną (drogi osadzone w~2D),
+  \item charakteryzują się dobrą lokalnością pamięciową (wierzchołki 
+        odpowiadające bliskim położeniom geograficznym są często blisko
+        również w numeracji),
+  \item zawierają dwie naturalne funkcje wag:
+        \begin{itemize}
+          \item długości odcinków (\texttt{USA-road-d}),
+          \item czasy przejazdu (\texttt{USA-road-t}).
+        \end{itemize}
+\end{itemize}
+
+Typowe drzewa najkrótszych ścieżek mają umiarkowaną głębokość, a liczba
+aktualnie etykietowanych wierzchołków jest relatywnie mała (ścieżki zwykle
+podążają wzdłuż kilku głównych korytarzy komunikacyjnych).
+
+\subsubsection{Wpływ na badane algorytmy}
+
+\begin{itemize}
+  \item \textbf{Dijkstra (kopiec binarny).}
+    Dla grafów drogowych jest to klasyczny punkt odniesienia. Duża
+    rzadkość grafu sprawia, że część \(O(m)\) zdominowana jest przez 
+    liczbę łuków, a czynnik \(\log n\) jest stosunkowo łagodny. W praktyce
+    obserwuje się dobre skalowanie nawet dla największych instancji.
+  \item \textbf{Dial.}
+    Wagi na sieciach drogowych są zwykle przechowywane jako liczby całkowite,
+    ale ich zakres może być duży (setki tysięcy lub więcej po odpowiednim
+    przeskalowaniu). Oznacza to:
+    \begin{itemize}
+      \item dla lokalnych podgrafów o małych rozpiętościach wag Dial może
+            być konkurencyjny,
+      \item dla pełnych instancji o dużym \(C\) liczba kubełków rośnie
+            na tyle, że koszt \(O(nC)\) eliminuje przewagę nad Dijkstrą.
+    \end{itemize}
+  \item \textbf{Dijkstra + \texttt{RadixHeap}.}
+    Dzięki monotonicznemu charakterowi etykiet w Dijkstrze i umiarkowanemu
+    zakresowi wag w praktycznych danych, \texttt{RadixHeap} dobrze dopasowuje
+    się do grafów drogowych:
+    \begin{itemize}
+      \item złożoność \(O(m + n\log(nC))\) jest bliska liniowej w liczbie
+            krawędzi,
+      \item silna lokalność i mały stopień wierzchołków przekładają się
+            na dobrą efektywność pamięciową i czasową,
+      \item w porównaniu do kopca binarnego zwykle obserwuje się podobne
+            lub nieco lepsze czasy, szczególnie na większych instancjach.
+    \end{itemize}
+\end{itemize}
+
+Podsumowując, rodziny grafów \texttt{Random}, \texttt{Grid} i \texttt{USA-road}
+pozwalają osobno zbadać wpływ:
+\begin{enumerate}
+  \item rozmiaru grafu i liczby krawędzi (\texttt{Random4-n}, \texttt{Long-n}, 
+        \texttt{Square-n}),
+  \item zakresu wag \(C\) przy stałym grafie (\texttt{Random4-C}, \texttt{Long-C},
+        \texttt{Square-C}),
+  \item realistycznej struktury geometrycznej i lokalności pamięciowej
+        (\texttt{USA-road-d/t}),
+\end{enumerate}
+na względną wydajność trzech wariantów algorytmu Dijkstry: z kopcem
+binarnym, z algorytmem Diala oraz z kolejką \texttt{RadixHeap}.
 \section{Wyniki, wnioski}
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{Random4-n_rand_all_algos.png}
+    \caption{\texttt{Random4-n}, test Rand (\texttt{Rand.ss})}
+    \label{fig:random4n-rand}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{Random4-n_ss_all_algos.png}
+    \caption{\texttt{Random4-n}, test ss}
+    \label{fig:random4n-ss}
+  \end{subfigure}
+  \caption{Czasy działania algorytmów dla rodziny \texttt{Random4-n}.}
+  \label{fig:random4n}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{Random4-C_rand_all_algos.png}
+    \caption{\texttt{Random4-C}, test Rand (\texttt{Rand.ss})}
+    \label{fig:random4c-rand}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{Random4-C_ss_all_algos.png}
+    \caption{\texttt{Random4-C}, test ss}
+    \label{fig:random4c-ss}
+  \end{subfigure}
+  \caption{Czasy działania algorytmów dla rodziny \texttt{Random4-C}.}
+  \label{fig:random4c}
+\end{figure}
+
+
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{Long-n_rand_all_algos.png}
+    \caption{\texttt{Long-n}, test Rand (\texttt{Rand.ss})}
+    \label{fig:longn-rand}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{Long-n_ss_all_algos.png}
+    \caption{\texttt{Long-n}, test ss}
+    \label{fig:longn-ss}
+  \end{subfigure}
+  \caption{Czasy działania algorytmów dla rodziny \texttt{Long-n}.}
+  \label{fig:longn}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{Square-n_rand_all_algos.png}
+    \caption{\texttt{Square-n}, test Rand (\texttt{Rand.ss})}
+    \label{fig:squaren-rand}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{Square-n_ss_all_algos.png}
+    \caption{\texttt{Square-n}, test ss}
+    \label{fig:squaren-ss}
+  \end{subfigure}
+  \caption{Czasy działania algorytmów dla rodziny \texttt{Square-n}.}
+  \label{fig:squaren}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{Long-C_rand_all_algos.png}
+    \caption{\texttt{Long-C}, test Rand (\texttt{Rand.ss})}
+    \label{fig:longc-rand}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{Long-C_ss_all_algos.png}
+    \caption{\texttt{Long-C}, test ss}
+    \label{fig:longc-ss}
+  \end{subfigure}
+  \caption{Czasy działania algorytmów dla rodziny \texttt{Long-C}.}
+  \label{fig:longc}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{Square-C_rand_all_algos.png}
+    \caption{\texttt{Square-C}, test Rand (\texttt{Rand.ss})}
+    \label{fig:squarec-rand}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{Square-C_ss_all_algos.png}
+    \caption{\texttt{Square-C}, test ss}
+    \label{fig:squarec-ss}
+  \end{subfigure}
+  \caption{Czasy działania algorytmów dla rodziny \texttt{Square-C}.}
+  \label{fig:squarec}
+\end{figure}
+
+
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{USA-road-t_rand_all_algos.png}
+    \caption{\texttt{USA-road-t}, test Rand (\texttt{Rand.ss})}
+    \label{fig:usa-rand}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{USA-road-t_ss_all_algos.png}
+    \caption{\texttt{USA-road-t}, test ss}
+    \label{fig:usa-ss}
+  \end{subfigure}
+  \caption{Czasy działania algorytmów dla rodziny \texttt{USA-road-t}.}
+  \label{fig:usa-road-t}
+\end{figure}
+\pagebreak
+
 
 \section{Podsumowanie}
 
