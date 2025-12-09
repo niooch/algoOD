@@ -7,6 +7,9 @@
 \usepackage[final]{microtype}
 \usepackage{graphicx}
 \usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{multirow}
+
 
 \usepackage[a4paper,margin=2.5cm]{geometry}
 \usepackage{fancyhdr}
@@ -152,10 +155,8 @@ Operacja \texttt{push} jedynie wrzuca element \((\texttt{key}, v)\) do odpowiedn
 \end{enumerate}
 Dzięki temu kubełek 0 zawsze zawiera elementy o najmniejszym aktualnym kluczu.
 
-Dijkstra z tą strukturą ma postać:
-
 \begin{verbatim}
-radixheap_dijkstra(G, s):
+radixheap(G, s):
     for v in V:
         dist[v] = INF
     dist[s] = 0
@@ -202,7 +203,7 @@ Grafy losowe są skierowane, z liczbą wierzchołków \(n\) i liczbą łuków
 \(m = 4n\). Generator najpierw tworzy cykl Hamiltona (aby zapewnić silną 
 spójność), a następnie losuje dodatkowe łuki, wybierając pary 
 \((v,w)\), \(v \neq w\). Długości łuków są niezależnie i jednostajnie
-losowane z przedziału całkowitego \([0, C]\). :contentReference[oaicite:0]{index=0}
+losowane z przedziału całkowitego \([0, C]\). 
 
 Takie grafy:
 \begin{itemize}
@@ -266,7 +267,7 @@ n = 2^{20}, \quad m = 4n, \quad C = 4^i, \ i = 0,1,\dots,15.
 
 Grafy siatkowe mają strukturę prostokątnej siatki \(x \times y\). Wierzchołki 
 są połączone z sąsiadami w górę, w dół, w lewo i w prawo (z wyjątkiem brzegów),
-a długości łuków są losowane z \([0, C]\). :contentReference[oaicite:1]{index=1}
+a długości łuków są losowane z \([0, C]\). 
 
 Rozróżniamy:
 \begin{itemize}
@@ -558,10 +559,118 @@ binarnym, z algorytmem Diala oraz z kolejką \texttt{RadixHeap}.
   \caption{Czasy działania algorytmów dla rodziny \texttt{USA-road-t}.}
   \label{fig:usa-road-t}
 \end{figure}
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{USA-road-t_all_states_Rand_bar.png}
+    \caption{Rodzina \texttt{USA-road-t}, test \texttt{Rand.ss} (wszystkie instancje).}
+    \label{fig:usa-all-rand-bar}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{USA-road-t_all_states_ss_bar.png}
+    \caption{Rodzina \texttt{USA-road-t}, test \texttt{ss} (wszystkie instancje).}
+    \label{fig:usa-all-ss-bar}
+  \end{subfigure}
+  \caption{Wykresy słupkowe porównujące czasy działania algorytmów dla wszystkich
+           instancji rodziny \texttt{USA-road-t}.}
+  \label{fig:usa-all-bar}
+\end{figure}
+
+
 \pagebreak
+\begin{table}[htbp]
+  \centering
+  \caption{Długości najkrótszych ścieżek dla największych instancji rodzin \texttt{Long-n}, \texttt{Square-n}, \texttt{Long-C} oraz \texttt{Square-C}.}
+  \label{tab:long-square-p2p}
+  \begin{tabular}{llrrr}
+    \toprule
+    Rodzina & Para $(s,t)$ & \texttt{dijkstra} & \texttt{dial} & \texttt{radixheap} \\
+    \midrule
+    \multirow{5}{*}{\texttt{Long-n.21.0}}
+      & $(1,2097152)$      & 31336751771 & 31336751771 & 31336751771 \\
+      & $(1009993,89642)$  & 12136501400 & 12136501400 & 12136501400 \\
+      & $(932923,1298742)$ & 12611272258 & 12611272258 & 12611272258 \\
+      & $(811963,913618)$  & 45409673212 & 45409673212 & 45409673212 \\
+      & $(1003612,453665)$ & 43487757770 & 43487757770 & 43487757770 \\
+    \midrule
+    \multirow{5}{*}{\texttt{Square-n.21.0}}
+      & $(1,2096704)$      & 714640488   & 714640488   & 714640488   \\
+      & $(818431,1576966)$ & 478833912   & 478833912   & 478833912   \\
+      & $(1726360,687497)$ & 302704631   & 302704631   & 302704631   \\
+      & $(114272,1210275)$ & 271654165   & 271654165   & 271654165   \\
+      & $(904270,1818305)$ & 344164231   & 344164231   & 344164231   \\
+    \midrule
+    \multirow{5}{*}{\texttt{Long-C.9.0}}
+      & $(1,1048576)$      & 1584591029  & 1584591029  & 1584591029  \\
+      & $(326707,371251)$  & 1534446468  & 1534446468  & 1534446468  \\
+      & $(908055,618433)$  & 2350573131  & 2350573131  & 2350573131  \\
+      & $(351719,291140)$  & 4595631045  & 4595631045  & 4595631045  \\
+      & $(786139,488347)$  & 1876680437  & 1876680437  & 1876680437  \\
+    \midrule
+    \multirow{5}{*}{\texttt{Square-C.9.0}}
+      & $(1,1048576)$      & 49020430    & 49020430    & 49020430    \\
+      & $(771039,330684)$  & 32554885    & 32554885    & 32554885    \\
+      & $(585891,589853)$  & 79093637    & 79093637    & 79093637    \\
+      & $(979929,582692)$  & 77716688    & 77716688    & 77716688    \\
+      & $(35783,6350)$     & 61010637    & 61010637    & 61010637    \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
+\begin{table}[htbp]
+  \centering
+  \caption{Długości najkrótszych ścieżek dla największych instancji rodzin \texttt{Random4-n} i \texttt{Random4-C}.}
+  \label{tab:random4-p2p}
+  \begin{tabular}{llrrr}
+    \toprule
+    Rodzina & Para $(s,t)$ & \texttt{dijkstra} & \texttt{dial} & \texttt{radixheap} \\
+    \midrule
+    \multirow{5}{*}{\texttt{Random4-n.21.0}} 
+      & $(1,2097152)$      &  9051281   &  9051281   &  9051281   \\
+      & $(1408389,480125)$ &  8694005   &  8694005   &  8694005   \\
+      & $(1025312,1741784)$&  7393981   &  7393981   &  7393981   \\
+      & $(381995,158098)$  & 10205500   & 10205500   & 10205500   \\
+      & $(226050,1125125)$ &  6399149   &  6399149   &  6399149   \\
+    \midrule
+    \multirow{5}{*}{\texttt{Random4-C.9.0}} 
+      & $(1,1048576)$      &   966465   &   966465   &   966465   \\
+      & $(378832,605128)$  &  1079939   &  1079939   &  1079939   \\
+      & $(587273,140016)$  &  1017314   &  1017314   &  1017314   \\
+      & $(796379,514564)$  &  1108414   &  1108414   &  1108414   \\
+      & $(99102,374607)$   &  1032348   &  1032348   &  1032348   \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+\begin{table}[htbp]
+  \centering
+  \caption{Długości najkrótszych ścieżek dla największej instancji rodziny \texttt{USA-road-t} (\texttt{USA-road-t.USA}).}
+  \label{tab:usa-road-p2p}
+  \begin{tabular}{llrrr}
+    \toprule
+    Rodzina & Para $(s,t)$ & \texttt{dijkstra} & \texttt{dial} & \texttt{radixheap} \\
+    \midrule
+    \multirow{5}{*}{\texttt{USA-road-t.USA}}
+      & $(1,23947347)$        & 26227528 & 26227528 & 26227528 \\
+      & $(16113059,19149306)$ & 11528080 & 11528080 & 11528080 \\
+      & $(19211217,11341550)$ & 36852237 & 36852237 & 36852237 \\
+      & $(11651134,6881299)$  &  9791692 &  9791692 &  9791692 \\
+      & $(13228455,14481649)$ & 14620757 & 14620757 & 14620757 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
-\section{Podsumowanie}
+\pagebreak
+\section{Wnioski}
+Z wykresu widać zachowanie zgodne z przewidywaniami teoretycznymi:
+\begin{itemize}
+    \item W rodzinach \texttt{Random4-n} i \texttt{Random4-C} wszystkie algorytmy zachowują się zgodnie z przewidywaniami. Dla \texttt{Random4-n} Dial jest szybki dla małych \(n\), ale szybko staje się niepraktyczny ze względu na rosnący koszt \(O(nC)\). \texttt{RadixHeap} oferuje lepszą skalowalność niż kopiec binarny, szczególnie dla większych \(n\). W \texttt{Random4-C} Dial wykazuje liniowy wzrost czasu z \(C\), podczas gdy \texttt{RadixHeap} pozostaje praktycznie niezmienny.
+    \item W rodzinach \texttt{Long-n} i \texttt{Square-n} różnice w strukturze drzewa najkrótszych ścieżek wpływają na wydajność. W \texttt{Long-n} Dijkstra z kopcem binarnym radzi sobie lepiej ze względu na mniejszy front, podczas gdy w \texttt{Square-n} większy front prowadzi do gorszych czasów. Dial ponownie staje się niepraktyczny dla dużych \(n\), a \texttt{RadixHeap} oferuje stabilne czasy działania.
+    \item W rodzinach \texttt{Long-C} i \texttt{Square-C} Dial wykazuje wyraźny wzrost czasu z \(C\), co czyni go niepraktycznym dla dużych wartości. \texttt{RadixHeap} pozostaje stabilny, a Dijkstra z kopcem binarnym nie wykazuje znaczącej zmiany czasu z \(C\).
+    \item W rodzinie \texttt{USA-road-t} wszystkie algorytmy działają efektywnie ze względu na strukturę grafu drogowego. Dial jest konkurencyjny dla mniejszych instancji, ale dla większych staje się wolniejszy niż pozostałe algorytmy. \texttt{RadixHeap} oferuje najlepszą wydajność na największych instancjach, przewyższając kopiec binarny.
+\end{itemize}
+Natomias tabelki z długościami najkrótszych ścieżek potwierdzają poprawność implementacji wszystkich algorytmów, gdyż wyniki są zgodne dla każdej pary wierzchołków we wszystkich testowanych rodzinach grafów.
 
 \end{document}
 

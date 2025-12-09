@@ -5,4 +5,5 @@
 *.out
 *.gz
 *.toc
-
+noty.tex
+noty.pdf
