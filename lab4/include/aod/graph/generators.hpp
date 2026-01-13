@@ -1,5 +1,5 @@
 #pragma once
-#include "flowNetwork.hpp"
+#include "aod/graph/flowNetwork.hpp"
 #include <vector>
 #include <utility>
 #include <cstdint>
