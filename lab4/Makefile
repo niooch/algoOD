@@ -27,7 +27,7 @@ TASK4_OBJ := $(TASK4_MAIN:src/%.cpp=$(BUILD)/%.o)
 
 .PHONY: all clean run1 run2
 
-all: $(TASK1_APP) $(TASK2_APP) #$(TASK4_APP)
+all: $(TASK1_APP) $(TASK2_APP) $(TASK4_APP)
 
 $(TASK1_APP): $(COMMON_OBJS) $(TASK1_OBJ)
 	$(CXX) $^ -o $@ $(LDFLAGS)

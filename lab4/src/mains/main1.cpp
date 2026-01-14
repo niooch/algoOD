@@ -46,6 +46,18 @@ int main(int argc, char** argv) {
         aod::EdmondsKarp mf;
         maxflow = mf.run(inst.net, inst.s, inst.t, st);
     }
+    if (printFlow) {
+        for (const auto& ref : inst.forward_edges) {
+            int u = ref.first;
+            int idx = ref.second;
+            const auto& e = inst.net.adj()[u][idx];
+
+            long long f = e.orig - e.cap;   // przepływ na krawędzi forward
+
+            std::cout << u << " " << e.to << " " << f << "\n";
+        }
+    }
+
 
     std::cout << maxflow << "\n";
 

@@ -48,6 +48,26 @@ int main(int argc, char** argv) {
         maxflow = mf.run(inst.net, inst.s, inst.t, st);
     }
 
+    if (printMatching) {
+        const int m = 1 << k;
+        const int V1_start = 1;
+        const int V2_start = 1 + m;
+
+        for (const auto& ref : inst.forward_edges) {
+            int nu = ref.first;
+            int idx = ref.second;
+            const auto& e = inst.net.adj()[nu][idx];
+
+            long long f = e.orig - e.cap; // 0 albo 1
+            if (f == 1) {
+                int u = nu - V1_start;      // etykieta w V1: 0..m-1
+                int v = e.to - V2_start;    // etykieta w V2: 0..m-1
+                std::cout << u << " " << v << "\n";
+            }
+        }
+    }
+
+
     std::cout << maxflow << "\n";
     (void)printMatching;
 
