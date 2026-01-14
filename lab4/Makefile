@@ -5,11 +5,13 @@ LDFLAGS  :=
 BUILD := build
 
 COMMON_SRCS := \
-  src/common/timer.cpp \
-  src/graph/flowNetwork.cpp \
-  src/graph/generators.cpp \
-  src/flow/edmondsKarp.cpp \
-  src/flow/dinic.cpp
+			   src/common/timer.cpp \
+			   src/graph/flowNetwork.cpp \
+			   src/graph/generators.cpp \
+			   src/flow/edmondsKarp.cpp \
+			   src/flow/dinic.cpp \
+			   src/export/glpk_mathprog.cpp
+
 
 COMMON_OBJS := $(COMMON_SRCS:src/%.cpp=$(BUILD)/%.o)
 

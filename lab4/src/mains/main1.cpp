@@ -2,9 +2,15 @@
 #include "aod/graph/generators.hpp"
 #include "aod/flow/edmondsKarp.hpp"
 #include "aod/flow/dinic.hpp"
+#include "aod/export/glpk_mathprog.hpp"
 #include <iostream>
 #include <string>
 #include <cstdint>
+
+static std::string require_str(int& i, int argc, char** argv) {
+    if (i + 1 >= argc) { std::cerr << "Missing value after " << argv[i] << "\n"; std::exit(2); }
+    return std::string(argv[++i]);
+}
 
 static int require_int(int& i, int argc, char** argv) {
     if (i + 1 >= argc) { std::cerr << "Missing value after " << argv[i] << "\n"; std::exit(2); }
@@ -21,6 +27,8 @@ int main(int argc, char** argv) {
     bool printFlow = false;
     std::uint64_t seed = 0;
     std::string algo = "ek";
+    std::string glpkPath;
+    bool useGlpk = false;
 
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
@@ -28,6 +36,7 @@ int main(int argc, char** argv) {
         else if (a == "--seed") seed = require_u64(i, argc, argv);
         else if (a == "--printFlow") printFlow = true;
         else if (a == "--algo") { if (i+1>=argc) std::exit(2); algo = argv[++i]; }
+        else if (a == "--glpk") { glpkPath = require_str(i, argc, argv); useGlpk = true; }
         else { std::cerr << "Unknown arg: " << a << "\n"; return 2; }
     }
     if (k < 1) { std::cerr << "--size k required\n"; return 2; }
@@ -38,6 +47,11 @@ int main(int argc, char** argv) {
 
     aod::FlowStats st;
     long long maxflow = 0;
+
+    if (useGlpk) {
+        aod::export_maxflow_mathprog(inst.net, inst.s, inst.t, glpkPath);
+        return 0;
+    }
 
     if (algo == "dinic") {
         aod::Dinic mf;
